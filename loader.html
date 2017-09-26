@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+#myProgress {
+    width: 50%;
+    background-color: grey;
+}
+#myBar {
+    width: 1%;
+    height: 30px;
+    background-color: green;
+}        
+
+#RunButtons {
+
+}
+canvas { display:block; margin:1em auto; background:#fff; border:1px solid #ccc }
+</style>
+</head>
+
+<body>
+    <span id=FileChoose"><input type="file" onchange="ReadFile()" /></span>
+	<span class='RunButtons' >
+	<INPUT TYPE="BUTTON" VALUE="Rewind" ONCLICK="Rewind()"/>
+	<INPUT TYPE="BUTTON" VALUE="Run" ONCLICK="Run()"/>
+	<INPUT TYPE="BUTTON" VALUE="Pause" ONCLICK="Pause()" />
+	<INPUT TYPE="BUTTON" VALUE="BStep" ONCLICK="BStep()" />
+	<INPUT TYPE="BUTTON" VALUE="Step" ONCLICK="Step()" />
+	<INPUT TYPE="BUTTON" VALUE="Jump" ONCLICK="Jump()"/> 
+    <textarea cols="40" rows="1" id="labme" ></textarea>
+
+
+
+	</span>
+<br/>
+<textarea cols="100" rows="4" ></textarea>
+
+<div id="myProgress"><div id="myBar"></div></div>
+<div id="myCanvas"> <canvas></canvas></DIV>
+<script type="text/javascript" charset="utf-8" SRC="carshow.js"></script>
+<script type="text/javascript" charset="utf-8" SRC="loader.js"></script>
+<script type="text/javascript" charset="utf-8" SRC="canvas.js"></script>
+</body>
+</html>
+
+
