@@ -19,7 +19,6 @@ const ELEMENT_DESCRIBE =(99);
 const KEY_DESCRIBE     =(98);
 const KEY_EVENTN       =(97);
 const KEY_MESSAGE      =(96);
-const ODOSCALE = 4.58;
 
 var Parse32 = function (val , o ) {
    if(val & 0x80)
@@ -423,7 +422,7 @@ function setprog(width)
     var arrayLength = data.length;
 	var par=new Parser();
     var i=0;
-	var mto=setInterval( function cb() 
+	var mto=setInterval( function cb()
    {//interval function
 	let endv=i+1000;
 	

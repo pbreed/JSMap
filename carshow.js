@@ -10,6 +10,8 @@ class carstate
 	}
 };
 
+const ODOSCALE = 4.58*.93;
+
 const car_corner = [ [8,-6],[8,6],[-19,6],[-19,-6],[8,-6]];
 
 class carshow
@@ -61,7 +63,7 @@ scanone(v){
 		 let dy=dist*Math.cos(v.head*Math.PI/180.0);
 		 this.carx+=dx;
 		 this.cary+=dy;
-		 
+		
 		 if((this.carx==NaN) || (this.cary==NaN))
 		 {
 		   console.log('NAN??\n');
@@ -96,7 +98,7 @@ case 'LidarReadingObj':
    }//Switch
   }//function
 
-  
+
 expand_extent(x,y)
   {
 	  if(x>this.extent.maxx) this.extent.maxx=x;
@@ -172,7 +174,7 @@ ctx.restore();
 let points=[];
 for( let n=45; n<135; n++)
 {
-   if(rl[n]!=undefined) 
+   if(rl[n]!=undefined)
    {
 	let dist=rl[n];
 	let point=[];
@@ -191,7 +193,7 @@ for(let qq=nn+1; qq<points.length; qq++)
  {
 	let p={'nn':nn, 'qq':qq,'m':(points[qq].y-points[nn].y)/(points[qq].x-points[nn].x)};
 	slopes.push(p);
-   
+
  }
 }
 
@@ -225,24 +227,33 @@ nl=6+nl/(1250*2.54);
 
 if( (nl> Math.abs(2*b)) && (p.m>-0.2) && (p.m < 0.2))
 {
+ let cl=this.corners.length;
+
  if(points[p.nn].x > 0)
 {
+
 	xx=0;
 	yy=b;
-	this.corners.push({'x':(c*xx)+(-s*yy)+x ,'y':(-((c*yy)+(s*xx)))+y});
+	if ((cl==0) || (this.corners[cl-1].indent==false))
+   	{
+	this.corners.push({'x':(c*xx)+(-s*yy)+x ,'y':(-((c*yy)+(s*xx)))+y,'indent':true});
+	}
 }
 else
  if(points[p.nn].x<0)
 {
  xx=0;
  yy=b;
- this.corners.push({'x':(c*xx)+(-s*yy)+x ,'y':(-((c*yy)+(s*xx)))+y});
+ if ((cl==0) || (this.corners[cl-1].indent))
+ {
+ this.corners.push({'x':(c*xx)+(-s*yy)+x ,'y':(-((c*yy)+(s*xx)))+y,'indent':false});
+ }
 }
 
 }
 
 
-}//if 
+}//if
 
 
 }
