@@ -8,14 +8,20 @@
 	var bRun=false;
 	var state_pos=0;
 	var selectedRect;
-	var ctx; 
+	var ctx;
 	var ictx;
 	var ZoomObj;
+	var bIOwnMouse=false;
+    var bMouseIsDown=false;
+    var pMouseLeft=null;
+
+    var TheSelectedAction='?';
 		
 	const MARGIN_FEET=10;
 	const GRID_HORIZONTAL_SPACING = 10;
 	const GRID_VERTICAL_SPACING = 10;
 	const GRID_LINE_COLOR = 'rgb(0, 0, 200)';
+	const ZOOM_MIN_LIMIT= 0.25;
 
 	class ScalingObject
 	{
@@ -26,16 +32,19 @@
 	 this.Display_ht=dispcanvas.clientHeight;
 	 this.Display_wd=dispcanvas.clientWidth;
 	 this.DispCan=dispcanvas;
-   	 this.Draw_ht=drcanvas.clientHeight;
-	 this.Draw_wd=drcanvas.clientWidth;
-	 this.DrCenter={'x':this.Draw_wd/2, 'y':this.Draw_ht/2};
 	 this.DrawCan=drcanvas;
+   	 this.Draw_ht=drcanvas.height;
+	 this.Draw_wd=drcanvas.width;
+	 this.DrCenter={'x':this.Draw_wd/2, 'y':this.Draw_ht/2};
+	 this.MouseDownInDraw={'x':0,'y':0};
+	 this.MouseDownOrgCenter=this.DrCenter;
+	 this.MouseDownOrgOffset=this.OffsetIntoDraw;
 	 }
-	  
+	
 
 	 GetOffset()
 	 {
-	   return this.OffsetIntoDraw; 
+	   return this.OffsetIntoDraw;
 	 }
 
 	 DispCanToDrawCan(loc)
@@ -49,26 +58,36 @@
 
 	 DrawCanToDispCan(loc)
 	 {
-	  let hx=loc.x-this.OffsetIntoDraw.x; 
-	  let hy=loc.y-this.OffsetIntoDraw.x; 
+	  let hx=loc.x-this.OffsetIntoDraw.x;
+	  let hy=loc.y-this.OffsetIntoDraw.y;
 	  loc.x=hx*this.OffsetIntoDraw.zm;
 	  loc.y=hy*this.OffsetIntoDraw.zm;
 	  return loc;
      }
-	 
+	
 	 Zoom(delta,x,y)
 	 {
-	   let loc = windowToCanvas(this.DispCan, x, y); 
+	   let loc = windowToCanvas(this.DispCan, x, y);
 	   loc=this.DispCanToDrawCan(loc);
 	   this.DRCenter=loc;
-       if(delta>0) this.OffsetIntoDraw.zm*=2;
+
+	   if(delta>0) this.OffsetIntoDraw.zm*=2;
 	   if(delta<0) this.OffsetIntoDraw.zm/=2;
-	   
+
+	   if(this.OffsetIntoDraw.zm<ZOOM_MIN_LIMIT)
+		   {
+		    this.OffsetIntoDraw.zm=ZOOM_MIN_LIMIT;
+			this.DRCenter.x=this.Draw_wd/2;
+			this.DRCenter.y=this.Draw_ht/2;
+			loc=this.DRCenter;
+           }
+
+	
 	   //We must use DR Center to calculate
 	   //We want DRcenter=dispcenter...
 
-	   loc.x-=this.Display_wd/(2*this.OffsetIntoDraw.zm); 
-	   loc.y-=this.Display_ht/(2*this.OffsetIntoDraw.zm); 
+	   loc.x-=this.Display_wd/(2*this.OffsetIntoDraw.zm);
+	   loc.y-=this.Display_ht/(2*this.OffsetIntoDraw.zm);
 
 	   this.OffsetIntoDraw.x=Math.round(loc.x);
 	   this.OffsetIntoDraw.y=Math.round(loc.y);
@@ -76,6 +95,35 @@
 	   this.DrawCanToDispCan(loc);
 	   console.log('SB Center ['+loc.x.toString()+','+loc.y.toString()+']');
 
+	 }
+	 DragStart(loc)
+	 {
+     this.MouseDownInDraw=this.DispCanToDrawCan(loc);
+	 this.MouseDownOrgCenter=this.DrCenter;
+	 this.MouseDownOrgOffset=this.OffsetIntoDraw;
+	 }
+
+	 DragMove(loc)
+	 {
+		 let cp=this.DispCanToDrawCan(loc);
+		 let dx=(cp.x-this.MouseDownInDraw.x);
+		 let dy=(cp.y-this.MouseDownInDraw.y);
+		 this.OffsetIntoDraw.x=this.MouseDownOrgOffset.x-dx;
+		 this.OffsetIntoDraw.y=this.MouseDownOrgOffset.y-dy;
+		 this.DrCenter.x=this.MouseDownOrgCenter.x-dx;
+		 this.DrCenter.y=this.MouseDownOrgCenter.y-dy;
+	 }
+
+	 DragEnd(loc)
+	 {
+      }
+
+	 MouseEdgeTest(wloc)
+	 {
+	  if(wloc.x<10) {this.DrCenter.x-=2; this.OffsetIntoDraw.x-=2; };
+	  if(wloc.y<10) {this.DrCenter.y-=2; this.OffsetIntoDraw.y-=2; };
+	  if((wloc.x+10)>=this.Display_wd){this.DrCenter.x+=2; this.OffsetIntoDraw.x+=2; };
+	  if((wloc.y+10)>=this.Display_ht){this.DrCenter.y+=2; this.OffsetIntoDraw.y+=2; };
 	 }
 
 	};
@@ -92,11 +140,15 @@
 
 		lab = document.getElementById('labme');
 
-    	   
-        
+    	
+
 	    ctx = canvas.getContext('2d');
+
 		ictx = iconCanvas.getContext('2d');
-	  
+		ictx.font = '36px Palatino';
+		ictx.textAlign = 'center';
+		ictx,textBaseline = 'middle';
+	
 		function redraw(ts){
 			
 			ictx.save();
@@ -111,6 +163,11 @@
 			ctx.stroke();
             basedraw(ctx);
 			ctx.restore();
+			if(pMouseLeft!=null)
+			{
+			  ZoomObj.MouseEdgeTest(pMouseLeft);
+
+			}
        	
 		}
 		var handleScroll = function(evt)
@@ -122,6 +179,15 @@
 		
 		canvas.addEventListener('DOMMouseScroll',handleScroll,false);
 		canvas.addEventListener('mousewheel',handleScroll,false);
+		canvas.addEventListener('contextmenu',
+					function (e)
+								{
+									e.stopPropagation();
+									e.preventDefault();
+									return true;
+								}
+		);
+
 		redraw(0);
 		//requestAnimationFrame(redraw);
 		setInterval(redraw,16);
@@ -154,15 +220,26 @@ function adddata(data_show)
 	OffsetCenter.x=(can_ctx-car_ctx);
 	OffsetCenter.y=(can_cty+car_cty); //Car ys are neg
 
-	let bgctx= os_bgcanvas.getContext('2d'); 
+	let bgctx= os_bgcanvas.getContext('2d');
 
-	bgctx.clearRect(0,0,bgctx.canvas.clientWidth,bgctx.canvas.clientHeight);
+	bgctx.clearRect(0,0,bgctx.canvas.width,bgctx.canvas.height);
 	drawGrid(bgctx,GRID_LINE_COLOR , 12, 12);
 	data_show.drawBase(bgctx,OffsetCenter.x,OffsetCenter.y);
+
+
+	bgctx.beginPath();
+	bgctx.strokeStyle= 'rgba(0,255,0,1.0)';
+	bgctx.arc(os_bgcanvas.width/2,os_bgcanvas.height/2,10,0,2*Math.PI);
+	bgctx.stroke();
+
+
+
 	ZoomObj=new ScalingObject(canvas,os_canvas);
 	canvas.onmousedown = CanvasMouseDown;
 	canvas.onmousemove = CanvasMouseMove;
 	canvas.onmouseup   = CanvasMouseUp;
+	canvas.onmouseleave= CanvasMouseLeave;
+	canvas.onmouseenter= CanvasMouseEnter;
 
 
 
@@ -174,10 +251,10 @@ function basedraw(ctx)
 if(data_display==undefined) return;
 let osctx = os_canvas.getContext('2d');
 
-osctx.clearRect(0,0,osctx.canvas.clientWidth,osctx.canvas.clientHeight);
+osctx.clearRect(0,0,osctx.canvas.width,osctx.canvas.height);
 osctx.drawImage(os_bgcanvas,0,0);
 
-data_display.drawState(osctx,state_pos,OffsetCenter.x,OffsetCenter.y); 
+data_display.drawState(osctx,state_pos,OffsetCenter.x,OffsetCenter.y);
 
 /*
 let wscale=os_canvas.width/canvas.width;
@@ -185,16 +262,16 @@ let hscale=os_canvas.height/canvas.height;
 
 if(wscale>hscale)
 {
-ctx.drawImage(os_canvas,0,0,os_canvas.width,os_canvas.height,0,0,canvas.width,canvas.height*(hscale/wscale));//,osctx.canvas.clientWidth,osctx.canvas.clientHeight,0,0,canvas.width,canvas.height);    
+ctx.drawImage(os_canvas,0,0,os_canvas.width,os_canvas.height,0,0,canvas.width,canvas.height*(hscale/wscale));//,osctx.canvas.clientWidth,osctx.canvas.clientHeight,0,0,canvas.width,canvas.height);
 }
 else
 {
-ctx.drawImage(os_canvas,0,0,os_canvas.width,os_canvas.height,0,0,canvas.width*(wscale/hscale),canvas.height);//,osctx.canvas.clientWidth,osctx.canvas.clientHeight,0,0,canvas.width,canvas.height);    
+ctx.drawImage(os_canvas,0,0,os_canvas.width,os_canvas.height,0,0,canvas.width*(wscale/hscale),canvas.height);//,osctx.canvas.clientWidth,osctx.canvas.clientHeight,0,0,canvas.width,canvas.height);
 }
 */
 //ctx.drawImage(os_canvas,0,0);
 
-dwoff=ZoomObj.GetOffset(); 
+dwoff=ZoomObj.GetOffset();
 
 let wd=os_canvas.width-dwoff.x;
 let ht=os_canvas.height-dwoff.y;
@@ -202,7 +279,7 @@ ctx.drawImage(os_canvas,dwoff.x,dwoff.y,wd,ht,0,0,wd*dwoff.zm,ht*dwoff.zm);
 
 
 if(bRun) state_pos++;
-if(state_pos>=data_display.getMaxState()) 
+if(state_pos>=data_display.getMaxState())
 	{
 	 state_pos=data_display.getMaxState()-1;
 	 bRun=false;
@@ -275,16 +352,16 @@ function drawGrid(context, color, stepx, stepy) {
 }
 
   const ICON_RECTANGLES = [
-      { x: 13.5, y: 13.5, w: 48, h: 48 },
-      { x: 13.5, y: 71.5, w: 48, h: 48 },
-      { x: 13.5, y: 129.5, w: 48, h: 48 },
-      { x: 13.5, y: 187.5, w: 48, h: 48 },
-      { x: 13.5, y: 245.5, w: 48, h: 48 },
-      { x: 13.5, y: 303.5, w: 48, h: 48 },
-      { x: 13.5, y: 361.5, w: 48, h: 48 },
-      { x: 13.5, y: 419.5, w: 48, h: 48 },
-      { x: 13.5, y: 477.5, w: 48, h: 48 },
-      { x: 13.5, y: 477.5, w: 48, h: 48 }
+      { x: 13.5, y: 13.5, w: 48, h: 48  , t:'P'},
+      { x: 13.5, y: 71.5, w: 48, h: 48  , t:'W'},
+      { x: 13.5, y: 129.5, w: 48, h: 48 , t:'C'},
+      { x: 13.5, y: 187.5, w: 48, h: 48 , t:'M'},
+      { x: 13.5, y: 245.5, w: 48, h: 48 , t:'X'},
+      { x: 13.5, y: 303.5, w: 48, h: 48 , t:'?'},
+      { x: 13.5, y: 361.5, w: 48, h: 48 , t:'?'},
+      { x: 13.5, y: 419.5, w: 48, h: 48 , t:'?'},
+      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'?'},
+      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'?'}
    ];
 
 
@@ -295,7 +372,7 @@ const ICON_FILL_STYLE = '#dddddd';
 const SHADOW_COLOR = 'rgba(0,0,0,0.7)';
 
 
-function windowToCanvas(canvas, x, y) 
+function windowToCanvas(canvas, x, y)
 {
 	var bbox = canvas.getBoundingClientRect();
     return { x: x - bbox.left * (canvas.width  / bbox.width),y: y - bbox.top  * (canvas.height / bbox.height)};
@@ -307,18 +384,19 @@ function IconDraw(context)
 	
 	   context.clearRect(0,0,iconCanvas.width,iconCanvas.height);
 
-       ICON_RECTANGLES.forEach(function(rect) 
+       ICON_RECTANGLES.forEach(function(rect)
        {
 	   context.save();
 
-	   if (selectedRect === rect) 
+	   if (selectedRect === rect)
 		   {
+		   TheSelectedAction=rect.t;
 		   context.shadowColor = SHADOW_COLOR;
 		   context.shadowOffsetX = 4;
 		   context.shadowOffsetY = 4;
 		   context.shadowBlur = 5;
 		   }
-	   else                             
+	   else
 		   {
 		   context.shadowColor = SHADOW_COLOR;
 		   context.shadowOffsetX = 1;
@@ -328,6 +406,7 @@ function IconDraw(context)
 
 	   context.fillStyle = ICON_BACKGROUND_STYLE;
 	   context.fillRect(rect.x, rect.y, rect.w, rect.h);
+	   context.strokeText(rect.t, rect.x + rect.w/2,rect.y + rect.h/2 + 5);
 	   context.restore();
 	   });
 }
@@ -337,56 +416,104 @@ function IconDraw(context)
 
 function CanvasMouseDown(e)
 {
-	x = e.x || e.clientX, 
-	y = e.y || e.clientY, 
+	x = e.x || e.clientX,
+	y = e.y || e.clientY,
 	loc = windowToCanvas(canvas, x, y);
-	loc=ZoomObj.DispCanToDrawCan(loc); 
-	e.x=loc.x;
-	e.y=loc.y;
-	data_display.mousedown(e,loc);
+	bMouseIsDown=true;
+	 switch (event.which) {
+	 case 1:
+			{
+				loc=ZoomObj.DispCanToDrawCan(loc);
+				data_display.mousedown(e,loc,TheSelectedAction);
+				bIOwnMouse=false;
+			}
+            break;
+     case 2://Middle
+	 case 3://Right
+			{bIOwnMouse=true;
+			ZoomObj.DragStart(loc);
+			 return e.preventDefault() && false;
+			}
+
+            break;
+	 }
+
 
 }
 
 function CanvasMouseUp(e)
 {
-	x = e.x || e.clientX, 
-	y = e.y || e.clientY, 
+	x = e.x || e.clientX,
+	y = e.y || e.clientY,
 	loc = windowToCanvas(canvas, x, y);
-	loc=ZoomObj.DispCanToDrawCan(loc); 
-	e.x=loc.x;
-	e.y=loc.y;
-	data_display.mouseup(e,loc);
+	bMouseIsDown=false;
+
+	if(bIOwnMouse)
+		{
+		ZoomObj.DragEnd(loc);
+	    e.stopPropagation();
+        e.preventDefault();
+        bIOwnMouse=false;
+		}
+	else
+		{
+	     loc=ZoomObj.DispCanToDrawCan(loc);
+         data_display.mouseup(e,loc,TheSelectedAction);
+	    }
 
 }
 
 function CanvasMouseMove(e)
 {
-	x = e.x || e.clientX, 
-	y = e.y || e.clientY, 
-	loc = windowToCanvas(canvas, x, y);
-	loc=ZoomObj.DispCanToDrawCan(loc); 
-	e.x=loc.x;
-	e.y=loc.y;
-	data_display.mousemove(e,loc);
+var	x = e.x || e.clientX,
+	y = e.y || e.clientY,
+	wloc = windowToCanvas(canvas, x, y);
+	if(bIOwnMouse)
+		{
+		ZoomObj.DragMove(wloc);
+		e.preventDefault();
+		}
+	else
+	    {
+		loc=ZoomObj.DispCanToDrawCan(wloc);
+		data_display.mousemove(e,loc,TheSelectedAction);
+	    }
 
+}
+
+
+function CanvasMouseLeave(e)
+{
+
+	if(!bMouseIsDown) return;
+var	x = e.x || e.clientX,
+	y = e.y || e.clientY,
+	wloc = windowToCanvas(canvas, x, y);
+ 	ZoomObj.MouseEdgeTest(wloc);
+	pMouseLeft=wloc;
+}
+
+function CanvasMouseEnter(e)
+{
+
+	if(!bMouseIsDown) return;
+	pMouseLeft=null;
 }
 
 
 
 
-
-
-function IconMouseDown(e) 
-	{var 
-				x = e.x || e.clientX, 
-				y = e.y || e.clientY, 
+function IconMouseDown(e)
+	{var
+				x = e.x || e.clientX,
+				y = e.y || e.clientY,
 				loc = windowToCanvas(iconCanvas, x, y);
 				e.preventDefault();
-		   
+		
 		   ICON_RECTANGLES.forEach(function(rect) {
 		   ictx.beginPath();
 		   ictx.rect(rect.x, rect.y, rect.w, rect.h);
-		   if (ictx.isPointInPath(loc.x, loc.y)) 
+		   if (ictx.isPointInPath(loc.x, loc.y))
 			  {
 			   selectedRect =rect;
 			 }

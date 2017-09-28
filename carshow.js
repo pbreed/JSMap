@@ -11,6 +11,24 @@ class carstate
 	}
 };
 
+
+function distance_pt(p1,p2)
+{
+return Math.sqrt((p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y));
+
+}
+
+class Measurement
+{
+ constructor(sp,ep)
+ {
+ this.start=sp;
+ this.end=ep;
+ this.value=distance_pt(sp,ep).toFixed(2);
+ }
+}
+
+
 const ODOSCALE = 4.58*.93;
 
 const car_corner = [ [8,-6],[8,6],[-19,6],[-19,-6],[8,-6]];
@@ -30,10 +48,10 @@ constructor(data)
   this.LastLidar=[];
   this.car_States=[];
   this.corners=[];
-  this.last_m_x=null;
-  this.last_m_y=null;
-  this.bMouseDown=false;
-
+  this.last_p=null;
+  this.down_p=null;
+  this.MouseDown='?';
+  this.Measurements=[];
   for(var i=0; i<data.length; i++)
 	{
 	this.scanone(data[i]);
@@ -165,7 +183,7 @@ drawLidar(ctx,x,y,h,rl,nl)
 if(rl==undefined) return;
 ctx.save();
 ctx.beginPath();
-ctx.strokeStyle= 'rgba(0,0,255,1.0)';
+ctx.strokeStyle= 'rgba(0,0,255,0.5)';
 
 for(let j=0; j<360; j++)
 {
@@ -324,7 +342,44 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
 
 	}
   }
-  if(this.last_m_x!=null)
+
+  if(this.MouseDown!=null)
+  {
+	switch(this.MouseDown)
+	{
+	case 'M': //measure
+		{
+		 ctx.beginPath();
+		 ctx.moveTo(this.down_p.x,this.down_p.y);
+		 ctx.lineTo(this.last_p.x,this.last_p.y);
+		 ctx.stroke();
+		}
+	}
+  }
+
+  if(this.Measurements.length)
+  {
+	ctx.save();
+	ctx.strokeStyle= 'rgba(0,0,128,1.0)';
+	ctx.font = '14px Palatino';
+	ctx.textAlign = 'center';
+	ctx.textBaseline = 'middle';
+
+	for(let i=0; i<this.Measurements.length; i++)
+	{  let m=this.Measurements[i];
+		 ctx.beginPath();
+		 ctx.moveTo(m.start.x,m.start.y);
+		 ctx.lineTo(m.end.x,m.end.y);
+		 ctx.stroke();
+		 ctx.strokeText(m.value,(m.start.x+m.end.x)/2,(m.start.y+m.end.y)/2);
+	}
+	ctx.restore();
+
+  }
+
+
+
+/*  if(this.last_m_x!=null)
   {
       ctx.strokeStyle= 'rgba(255,0,0,1.0)';
 	  ctx.beginPath();
@@ -338,35 +393,36 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
 
   }
 
-
- ctx.strokeStyle= 'rgba(0,0,0,1.0)';
- ctx.beginPath();
- ctx.rect(100,100,300,200);
- ctx.stroke();
+*/
 }
 
-mousedown(e,adjusted_loc)
+mousedown(e,adjusted_loc,t)
 {
-this.bMouseDown=true;
-this.last_m_x=adjusted_loc.x;
-this.last_m_y=adjusted_loc.y;
-return e.preventDefault() && false; 
+this.MouseDown=t;
+this.last_p=loc;
+this.down_p=loc;
+return e.preventDefault() && false;
 }
 
-mousemove(e,adjusted_loc)
+mousemove(e,adjusted_loc,t)
 {
-if(this.bMouseDown)
+if(this.MouseDown!=null)
 {
-this.last_m_x=adjusted_loc.x;
-this.last_m_y=adjusted_loc.y;
+this.last_p=loc;
 }
-return e.preventDefault() && false; 
+return e.preventDefault() && false;
 }
 
-mouseup(e,adjusted_loc)
+mouseup(e,adjusted_loc,t)
 {
-this.bMouseDown=false;
-return e.preventDefault() && false; 
+	switch(this.MouseDown)
+	{
+	case 'M': //measure
+		 this.Measurements.push(new Measurement(this.down_p,adjusted_loc));
+	break;
+	}
+this.MouseDown=null;
+return e.preventDefault() && false;
 }
 
 
