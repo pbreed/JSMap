@@ -1,3 +1,4 @@
+
 class carstate
 {
 	constructor(x,y,h,sl,rl)
@@ -130,16 +131,6 @@ drawBase(ctx,xo,yo)
 	}
 	ctx.stroke();
 
-  if(this.corners.length>0)
-  {
-	for(let i=0; i<this.corners.length; i++)
-	{
-		ctx.beginPath();
-		ctx.arc(this.corners[i].x,this.corners[i].y,10,0,2*Math.PI);
-		ctx.stroke();
-
-	}
-  }
 }
 
 
@@ -297,8 +288,19 @@ ctx.restore();
 
 drawState(ctx,pos,xo,yo)
 {
-this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].slidar);
 this.drawLidar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].rlidar,this.car_States[pos].slidar);
+this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].slidar);
+  if(this.corners.length>0)
+  {
+	for(let i=0; i<this.corners.length; i++)
+	{
+		ctx.beginPath();
+		ctx.arc(this.corners[i].x,this.corners[i].y,10,0,2*Math.PI);
+		ctx.stroke();
+
+	}
+  }
+
 }
 
 

@@ -1,25 +1,88 @@
 	var cseq=0;
-	var canvas
+	var os_bgcanvas;
+	var os_canvas;
+	var canvas;
+	var iconCanvas;
 	var lab;
 	var data_display;
 	var bRun=false;
 	var state_pos=0;
-	function startcanvas(data_show){	
-		data_display=data_show;
-		canvas = document.getElementsByTagName('canvas')[0];
+	var selectedRect;
+	var ctx; 
+	var ictx;
+	var ZoomObj;
+		
+	const MARGIN_FEET=10;
+	const GRID_HORIZONTAL_SPACING = 10;
+	const GRID_VERTICAL_SPACING = 10;
+	const GRID_LINE_COLOR = 'rgb(0, 0, 200)';
+
+	class ScalingObject
+	{
+		constructor(dispcanvas,drcanvas)
+	 {
+	 this.zoomv=1.0;
+	 this.OffsetIntoDraw ={'x':0, 'y':0,'zm':1.0};
+	 this.Display_ht=dispcanvas.clientHeight;
+	 this.Display_wd=dispcanvas.clientWidth;
+	 this.DispCan=dispcanvas;
+   	 this.Draw_ht=drcanvas.clientHeight;
+	 this.Draw_wd=drcanvas.clientWidth;
+	 this.DrCenter_x=this.Draw_wd/2;
+	 this.DrCenter_y=this.Draw_ht/2;
+	 this.DrawCan=drcanvas;
+	 }
+	  
+
+	 GetOffset()
+	 {
+	   return this.OffsetIntoDraw; 
+	 }
+
+	 DispCanToDrawCan(loc)
+	 {
+	 }
+
+	 DrawCanToDispCan(loc)
+	 {
+	 }
+	 
+	 Zoom(delta,x,y)
+	 {
+	   //let loc = windowToCanvas(this.DispCan, x, y); 
+	   //loc=this.DispCanToDrawCan(loc);
+
+		 if(delta>0) this.OffsetIntoDraw.zm*=2;
+		 if(delta<0) this.OffsetIntoDraw.zm/=2;
+	 }
+
+	};
+
+
+	var OffsetCenter={'x':0, 'y':0};
+	
+	function startcanvas(){	
+		canvas = document.getElementById('drawing-canvas');
+		iconCanvas = document.getElementById('icon-canvas');
+		iconCanvas.onmousedown = IconMouseDown;
+
+
+
 		lab = document.getElementById('labme');
 
-		canvas.width = 3000; canvas.height = 2000;
-
-		var ctx = canvas.getContext('2d');
-		trackTransforms(ctx);
-		function redraw(){
+    	   
+        
+	    ctx = canvas.getContext('2d');
+		ictx = iconCanvas.getContext('2d');
+	  
+		function redraw(ts){
+			
+			ictx.save();
+   		    IconDraw(ictx);
+			ictx.restore();
 			ctx.save();
-
 			// Clear the entire canvas
-			var p1 = ctx.transformedPoint(0,0);
-			var p2 = ctx.transformedPoint(canvas.width,canvas.height);
-			ctx.clearRect(p1.x,p1.y,p2.x-p1.x,p2.y-p1.y);
+			ctx.clearRect(0,0,canvas.width,canvas.height);
 			ctx.beginPath();
 			ctx.lineWidth = 2;
 			ctx.strokeRect(0,0,canvas.width,canvas.height);
@@ -28,123 +91,87 @@
 			ctx.restore();
        	
 		}
-		redraw();
-		
-		var lastX=canvas.width/2, lastY=canvas.height/2;
-		var dragStart,dragged;
-		canvas.addEventListener('mousedown',function(evt){
-			document.body.style.mozUserSelect = document.body.style.webkitUserSelect = document.body.style.userSelect = 'none';
-			lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
-			lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
-			dragStart = ctx.transformedPoint(lastX,lastY);
-			dragged = false;
-		},false);
-		canvas.addEventListener('mousemove',function(evt){
-			lastX = evt.offsetX || (evt.pageX - canvas.offsetLeft);
-			lastY = evt.offsetY || (evt.pageY - canvas.offsetTop);
-			dragged = true;
-			if (dragStart){
-				var pt = ctx.transformedPoint(lastX,lastY);
-				ctx.translate(pt.x-dragStart.x,pt.y-dragStart.y);
-				redraw();
-			}
-		},false);
-		canvas.addEventListener('mouseup',function(evt){
-			dragStart = null;
-			if (!dragged) zoom(evt.shiftKey ? -1 : 1 );
-		},false);
-
-		var scaleFactor = 1.1;
-		var zoom = function(clicks){
-			var pt = ctx.transformedPoint(lastX,lastY);
-			ctx.translate(pt.x,pt.y);
-			var factor = Math.pow(scaleFactor,clicks);
-			ctx.scale(factor,factor);
-			ctx.translate(-pt.x,-pt.y);
-			redraw();
-		}
-
-		var handleScroll = function(evt){
-			var delta = evt.wheelDelta ? evt.wheelDelta/40 : evt.detail ? -evt.detail : 0;
-			if (delta) zoom(delta);
-			return evt.preventDefault() && false;
+		var handleScroll = function(evt)
+		{
+				var delta = evt.wheelDelta ? evt.wheelDelta/40 : evt.detail ? -evt.detail : 0;
+				if ((delta) && (ZoomObj!=undefined)) ZoomObj.Zoom(delta,evt.x,evt.y);
+				return evt.preventDefault() && false;
 		};
+		
 		canvas.addEventListener('DOMMouseScroll',handleScroll,false);
 		canvas.addEventListener('mousewheel',handleScroll,false);
+		redraw(0);
+		//requestAnimationFrame(redraw);
 		setInterval(redraw,16);
 	};
 	
+
 	
-	function trackTransforms(ctx){
-		var svg = document.createElementNS("http://www.w3.org/2000/svg",'svg');
-		var xform = svg.createSVGMatrix();
-		ctx.getTransform = function(){ return xform; };
-		
-		var savedTransforms = [];
-		var save = ctx.save;
-		ctx.save = function(){
-			savedTransforms.push(xform.translate(0,0));
-			return save.call(ctx);
-		};
-		var restore = ctx.restore;
-		ctx.restore = function(){
-			xform = savedTransforms.pop();
-			return restore.call(ctx);
-		};
+function adddata(data_show)
+{
+	let ext=data_show.getExtents();
 
-		var scale = ctx.scale;
-		ctx.scale = function(sx,sy){
-			xform = xform.scaleNonUniform(sx,sy);
-			return scale.call(ctx,sx,sy);
-		};
-		var rotate = ctx.rotate;
-		ctx.rotate = function(radians){
-			xform = xform.rotate(radians*180/Math.PI);
-			return rotate.call(ctx,radians);
-		};
-		var translate = ctx.translate;
-		ctx.translate = function(dx,dy){
-			xform = xform.translate(dx,dy);
-			return translate.call(ctx,dx,dy);
-		};
-		var transform = ctx.transform;
-		ctx.transform = function(a,b,c,d,e,f){
-			var m2 = svg.createSVGMatrix();
-			m2.a=a; m2.b=b; m2.c=c; m2.d=d; m2.e=e; m2.f=f;
-			xform = xform.multiply(m2);
-			return transform.call(ctx,a,b,c,d,e,f);
-		};
-		var setTransform = ctx.setTransform;
-		ctx.setTransform = function(a,b,c,d,e,f){
-			xform.a = a;
-			xform.b = b;
-			xform.c = c;
-			xform.d = d;
-			xform.e = e;
-			xform.f = f;
-			return setTransform.call(ctx,a,b,c,d,e,f);
-		};
-		var pt  = svg.createSVGPoint();
-		ctx.transformedPoint = function(x,y){
-			pt.x=x; pt.y=y;
-			return pt.matrixTransform(xform.inverse());
-		}
-    }
-  
+	let car_cty=(ext.maxy+ext.miny)/2;
+	let car_ctx=(ext.maxx+ext.minx)/2;
+
+	os_canvas=document.createElement('canvas');
+
+	os_canvas.width  = (ext.maxx-ext.minx)+MARGIN_FEET*2*12;
+    os_canvas.height = (ext.maxy-ext.miny)+MARGIN_FEET*2*12;
+
+	os_bgcanvas=document.createElement('canvas');
+
+	os_bgcanvas.width  = (ext.maxx-ext.minx)+MARGIN_FEET*2*12;
+	os_bgcanvas.height = (ext.maxy-ext.miny)+MARGIN_FEET*2*12;
 
 
+	let can_cty=(os_canvas.height)/2;
+	let can_ctx=(os_canvas.width)/2;
 
+	//can_ctx==(off.x+car_ctx)
+	OffsetCenter.x=(can_ctx-car_ctx);
+	OffsetCenter.y=(can_cty+car_cty); //Car ys are neg
 
+	let bgctx= os_bgcanvas.getContext('2d'); 
 
+	bgctx.clearRect(0,0,bgctx.canvas.clientWidth,bgctx.canvas.clientHeight);
+	drawGrid(bgctx,GRID_LINE_COLOR , 12, 12);
+	data_show.drawBase(bgctx,OffsetCenter.x,OffsetCenter.y);
+	ZoomObj=new ScalingObject(canvas,os_canvas);
+
+data_display=data_show;
+}
 
 function basedraw(ctx)
 {
-let xo=(canvas.width/2);
-let yo=(canvas.height/2);
+if(data_display==undefined) return;
+let osctx = os_canvas.getContext('2d');
 
-data_display.drawBase(ctx,xo,yo);
-data_display.drawState(ctx,state_pos,xo,yo) 
-    
+osctx.clearRect(0,0,osctx.canvas.clientWidth,osctx.canvas.clientHeight);
+osctx.drawImage(os_bgcanvas,0,0);
+
+data_display.drawState(osctx,state_pos,OffsetCenter.x,OffsetCenter.y); 
+
+/*
+let wscale=os_canvas.width/canvas.width;
+let hscale=os_canvas.height/canvas.height;
+
+if(wscale>hscale)
+{
+ctx.drawImage(os_canvas,0,0,os_canvas.width,os_canvas.height,0,0,canvas.width,canvas.height*(hscale/wscale));//,osctx.canvas.clientWidth,osctx.canvas.clientHeight,0,0,canvas.width,canvas.height);    
+}
+else
+{
+ctx.drawImage(os_canvas,0,0,os_canvas.width,os_canvas.height,0,0,canvas.width*(wscale/hscale),canvas.height);//,osctx.canvas.clientWidth,osctx.canvas.clientHeight,0,0,canvas.width,canvas.height);    
+}
+*/
+//ctx.drawImage(os_canvas,0,0);
+
+dwoff=ZoomObj.GetOffset(); 
+
+ctx.drawImage(os_canvas,dwoff.x,dwoff.y,os_canvas.width-dwoff.x,os_canvas.height-dwoff.y,0,0,os_canvas.width*dwoff.zm,os_canvas.height*dwoff.zm);
+
+
 if(bRun) state_pos++;
 if(state_pos>=data_display.getMaxState()) 
 	{
@@ -192,4 +219,110 @@ if(state_pos==0) state_pos=data_display.getMaxState()-1;
 }
 
 
+function drawGrid(context, color, stepx, stepy) {
+   context.save()
+
+   context.strokeStyle = color;
+   context.fillStyle = '#ffffff';
+   context.lineWidth = 0.5;
+   context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+   context.globalAlpha = 0.1;
+
+   context.beginPath();
+   for (var i = stepx + 0.5; i < context.canvas.width; i += stepx) {
+     context.moveTo(i, 0);
+     context.lineTo(i, context.canvas.height);
+   }
+   context.stroke();
+
+   context.beginPath();
+   for (var i = stepy + 0.5; i < context.canvas.height; i += stepy) {
+     context.moveTo(0, i);
+     context.lineTo(context.canvas.width, i);
+   }
+   context.stroke();
+
+   context.restore();
+}
+
+  const ICON_RECTANGLES = [
+      { x: 13.5, y: 13.5, w: 48, h: 48 },
+      { x: 13.5, y: 71.5, w: 48, h: 48 },
+      { x: 13.5, y: 129.5, w: 48, h: 48 },
+      { x: 13.5, y: 187.5, w: 48, h: 48 },
+      { x: 13.5, y: 245.5, w: 48, h: 48 },
+      { x: 13.5, y: 303.5, w: 48, h: 48 },
+      { x: 13.5, y: 361.5, w: 48, h: 48 },
+      { x: 13.5, y: 419.5, w: 48, h: 48 },
+      { x: 13.5, y: 477.5, w: 48, h: 48 },
+      { x: 13.5, y: 477.5, w: 48, h: 48 }
+   ];
+
+
+const ICON_BACKGROUND_STYLE = '#eeeeee';
+const ICON_BORDER_STROKE_STYLE = 'rgba(100, 140, 230, 0.5)';
+const ICON_STROKE_STYLE = 'rgb(100, 140, 230)';
+const ICON_FILL_STYLE = '#dddddd';
+const SHADOW_COLOR = 'rgba(0,0,0,0.7)';
+
+
+function windowToCanvas(canvas, x, y) 
+{
+	var bbox = canvas.getBoundingClientRect();
+    return { x: x - bbox.left * (canvas.width  / bbox.width),y: y - bbox.top  * (canvas.height / bbox.height)};
+}
+
+
+function IconDraw(context)
+{
+	
+	   context.clearRect(0,0,iconCanvas.width,iconCanvas.height);
+
+       ICON_RECTANGLES.forEach(function(rect) 
+       {
+	   context.save();
+
+	   if (selectedRect === rect) 
+		   {
+		   context.shadowColor = SHADOW_COLOR;
+		   context.shadowOffsetX = 4;
+		   context.shadowOffsetY = 4;
+		   context.shadowBlur = 5;
+		   }
+	   else                             
+		   {
+		   context.shadowColor = SHADOW_COLOR;
+		   context.shadowOffsetX = 1;
+		   context.shadowOffsetY = 1;
+		   context.shadowBlur = 2;
+		   }
+
+	   context.fillStyle = ICON_BACKGROUND_STYLE;
+	   context.fillRect(rect.x, rect.y, rect.w, rect.h);
+	   context.restore();
+	   });
+}
+
+
+
+
+ 
+
+
+function IconMouseDown(e) 
+	{var 
+				x = e.x || e.clientX, 
+				y = e.y || e.clientY, 
+				loc = windowToCanvas(iconCanvas, x, y);
+				e.preventDefault();
+		   
+		   ICON_RECTANGLES.forEach(function(rect) {
+		   ictx.beginPath();
+		   ictx.rect(rect.x, rect.y, rect.w, rect.h);
+		   if (ictx.isPointInPath(loc.x, loc.y)) 
+			  {
+			   selectedRect =rect;
+			 }
+		});
+	}
 

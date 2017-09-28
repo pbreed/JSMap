@@ -1,4 +1,6 @@
 
+
+
 function RunButtonsVis(b)
 {
 	var divs = document.getElementsByClassName('RunButtons');
@@ -11,6 +13,7 @@ function RunButtonsVis(b)
 	}
 
 }
+
 
 
 const KEY_START =(250);
@@ -403,7 +406,7 @@ function setprog(width)
         elem.style.width = width + '%';
 }
 
- function ReadFile() {
+function ReadFile() {
   var input = document.getElementsByTagName("input")[0];
   var output = document.getElementsByTagName("textarea")[0];
   RunButtonsVis(false);
@@ -448,8 +451,8 @@ function setprog(width)
 		RunButtonsVis(true);
 
 		var car_show=new carshow(par.AccumlatedData);
+		adddata(car_show);
 
-		startcanvas(car_show);
 	}
 
 	}//interval function
@@ -472,3 +475,11 @@ function setprog(width)
   fr.readAsArrayBuffer(input.files[0]);
 
 }
+
+class StartTheWorld {
+	constructor()
+	{
+		startcanvas();
+	}
+}
+
