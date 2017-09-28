@@ -30,6 +30,10 @@ constructor(data)
   this.LastLidar=[];
   this.car_States=[];
   this.corners=[];
+  this.last_m_x=null;
+  this.last_m_y=null;
+  this.bMouseDown=false;
+
   for(var i=0; i<data.length; i++)
 	{
 	this.scanone(data[i]);
@@ -130,6 +134,26 @@ drawBase(ctx,xo,yo)
 	  ctx.lineTo(this.car_States[i].x+xo,-this.car_States[i].y+yo);
 	}
 	ctx.stroke();
+
+	for(let i=1; i<arrayLength; i++)
+    { let h=this.car_States[i].h
+	h-=90;
+    let s=Math.sin(-h*Math.PI/180.0);
+    let c=Math.cos(-h*Math.PI/180.0);
+    let yy=6+this.car_States[i].slidar/(1250*2.54);//    1250=1cm
+	let x=this.car_States[i].x+xo;
+	let y=-this.car_States[i].y+yo;
+	if(yy>12)
+	{
+	
+     ctx.beginPath();
+     ctx.strokeStyle= 'rgba(0,255,0,1.0)';
+     ctx.arc((s*yy)+x,(c*yy)+y,2,0,2*Math.PI);
+     ctx.stroke();
+     ctx.restore();
+	}
+	}
+
 
 }
 
@@ -300,9 +324,50 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
 
 	}
   }
+  if(this.last_m_x!=null)
+  {
+      ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+	  ctx.beginPath();
+	  ctx.moveTo(this.last_m_x-5,this.last_m_y-5);
+	  ctx.lineTo(this.last_m_x+5,this.last_m_y+5);
+	  ctx.stroke();
+	  ctx.beginPath();
+	  ctx.moveTo(this.last_m_x-5,this.last_m_y+5);
+	  ctx.lineTo(this.last_m_x+5,this.last_m_y-5);
+	  ctx.stroke();
 
+  }
+
+
+ ctx.strokeStyle= 'rgba(0,0,0,1.0)';
+ ctx.beginPath();
+ ctx.rect(100,100,300,200);
+ ctx.stroke();
 }
 
+mousedown(e,adjusted_loc)
+{
+this.bMouseDown=true;
+this.last_m_x=adjusted_loc.x;
+this.last_m_y=adjusted_loc.y;
+return e.preventDefault() && false; 
+}
+
+mousemove(e,adjusted_loc)
+{
+if(this.bMouseDown)
+{
+this.last_m_x=adjusted_loc.x;
+this.last_m_y=adjusted_loc.y;
+}
+return e.preventDefault() && false; 
+}
+
+mouseup(e,adjusted_loc)
+{
+this.bMouseDown=false;
+return e.preventDefault() && false; 
+}
 
 
 }

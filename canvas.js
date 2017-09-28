@@ -28,8 +28,7 @@
 	 this.DispCan=dispcanvas;
    	 this.Draw_ht=drcanvas.clientHeight;
 	 this.Draw_wd=drcanvas.clientWidth;
-	 this.DrCenter_x=this.Draw_wd/2;
-	 this.DrCenter_y=this.Draw_ht/2;
+	 this.DrCenter={'x':this.Draw_wd/2, 'y':this.Draw_ht/2};
 	 this.DrawCan=drcanvas;
 	 }
 	  
@@ -41,19 +40,42 @@
 
 	 DispCanToDrawCan(loc)
 	 {
+	   let hx=loc.x/this.OffsetIntoDraw.zm;
+	   let hy=loc.y/this.OffsetIntoDraw.zm;
+	   loc.x=hx+this.OffsetIntoDraw.x;
+	   loc.y=hy+this.OffsetIntoDraw.y;
+	   return loc;
 	 }
 
 	 DrawCanToDispCan(loc)
 	 {
-	 }
+	  let hx=loc.x-this.OffsetIntoDraw.x; 
+	  let hy=loc.y-this.OffsetIntoDraw.x; 
+	  loc.x=hx*this.OffsetIntoDraw.zm;
+	  loc.y=hy*this.OffsetIntoDraw.zm;
+	  return loc;
+     }
 	 
 	 Zoom(delta,x,y)
 	 {
-	   //let loc = windowToCanvas(this.DispCan, x, y); 
-	   //loc=this.DispCanToDrawCan(loc);
+	   let loc = windowToCanvas(this.DispCan, x, y); 
+	   loc=this.DispCanToDrawCan(loc);
+	   this.DRCenter=loc;
+       if(delta>0) this.OffsetIntoDraw.zm*=2;
+	   if(delta<0) this.OffsetIntoDraw.zm/=2;
+	   
+	   //We must use DR Center to calculate
+	   //We want DRcenter=dispcenter...
 
-		 if(delta>0) this.OffsetIntoDraw.zm*=2;
-		 if(delta<0) this.OffsetIntoDraw.zm/=2;
+	   loc.x-=this.Display_wd/(2*this.OffsetIntoDraw.zm); 
+	   loc.y-=this.Display_ht/(2*this.OffsetIntoDraw.zm); 
+
+	   this.OffsetIntoDraw.x=Math.round(loc.x);
+	   this.OffsetIntoDraw.y=Math.round(loc.y);
+
+	   this.DrawCanToDispCan(loc);
+	   console.log('SB Center ['+loc.x.toString()+','+loc.y.toString()+']');
+
 	 }
 
 	};
@@ -138,6 +160,11 @@ function adddata(data_show)
 	drawGrid(bgctx,GRID_LINE_COLOR , 12, 12);
 	data_show.drawBase(bgctx,OffsetCenter.x,OffsetCenter.y);
 	ZoomObj=new ScalingObject(canvas,os_canvas);
+	canvas.onmousedown = CanvasMouseDown;
+	canvas.onmousemove = CanvasMouseMove;
+	canvas.onmouseup   = CanvasMouseUp;
+
+
 
 data_display=data_show;
 }
@@ -169,7 +196,9 @@ ctx.drawImage(os_canvas,0,0,os_canvas.width,os_canvas.height,0,0,canvas.width*(w
 
 dwoff=ZoomObj.GetOffset(); 
 
-ctx.drawImage(os_canvas,dwoff.x,dwoff.y,os_canvas.width-dwoff.x,os_canvas.height-dwoff.y,0,0,os_canvas.width*dwoff.zm,os_canvas.height*dwoff.zm);
+let wd=os_canvas.width-dwoff.x;
+let ht=os_canvas.height-dwoff.y;
+ctx.drawImage(os_canvas,dwoff.x,dwoff.y,wd,ht,0,0,wd*dwoff.zm,ht*dwoff.zm);
 
 
 if(bRun) state_pos++;
@@ -306,7 +335,45 @@ function IconDraw(context)
 
 
 
- 
+function CanvasMouseDown(e)
+{
+	x = e.x || e.clientX, 
+	y = e.y || e.clientY, 
+	loc = windowToCanvas(canvas, x, y);
+	loc=ZoomObj.DispCanToDrawCan(loc); 
+	e.x=loc.x;
+	e.y=loc.y;
+	data_display.mousedown(e,loc);
+
+}
+
+function CanvasMouseUp(e)
+{
+	x = e.x || e.clientX, 
+	y = e.y || e.clientY, 
+	loc = windowToCanvas(canvas, x, y);
+	loc=ZoomObj.DispCanToDrawCan(loc); 
+	e.x=loc.x;
+	e.y=loc.y;
+	data_display.mouseup(e,loc);
+
+}
+
+function CanvasMouseMove(e)
+{
+	x = e.x || e.clientX, 
+	y = e.y || e.clientY, 
+	loc = windowToCanvas(canvas, x, y);
+	loc=ZoomObj.DispCanToDrawCan(loc); 
+	e.x=loc.x;
+	e.y=loc.y;
+	data_display.mousemove(e,loc);
+
+}
+
+
+
+
 
 
 function IconMouseDown(e) 
