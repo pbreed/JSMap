@@ -26,6 +26,10 @@ class Measurement
  this.end=ep;
  this.value=distance_pt(sp,ep).toFixed(2);
  }
+ recalculate()
+ {
+  this.value=distance_pt(this.start,this.end).toFixed(2);
+ }
 }
 
 class Path
@@ -388,9 +392,10 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
   {
 	switch(this.MouseDown)
 	{
-	case 'P': //measure
-	case 'W': //measure
+	case 'P': //Path
+	case 'W': //Wall
 	case 'M': //measure
+	case 'D': //Drag
 		{
 		 ctx.beginPath();
 		 ctx.moveTo(this.down_p.x,this.down_p.y);
@@ -502,6 +507,12 @@ if(t=='P')
 	this.Paths.push(new Path(this.down_p));
   }
 }
+else
+if(t=='D')
+{
+  this.StartPointDrag(loc);
+}
+
 
 return e.preventDefault() && false;
 }
@@ -532,6 +543,10 @@ mouseup(e,adjusted_loc,t)
 		this.DoDeleteObject(adjusted_loc);
 	break;
 
+	case 'D': 
+	     this.EndPointDrag(loc);
+	break;
+
 	case 'S':
 		this.DoSplitObject(adjusted_loc);
 	break
@@ -544,14 +559,31 @@ return e.preventDefault() && false;
 }
 
 
+getdisttoline(l1,l2,pXy)
+{
+ let dist;
+	if (l2.x != l1.x) 
+ {
+	 var a = (l2.y - l1.y) / (l2.x - l1.x);
+	 var b = l2.y - a * l2.x;
+	 dist = Math.abs(a * pXy.x + b - pXy.y) / Math.sqrt(a * a + 1);
+ }
+ else
+	 dist = Math.abs(pXy.x - l2.x);
+
+ return dist;
+
+
+}
+
 getClosestPointOnLines(pXy,aXys) 
 {
 
-    let minDist;
+    let minDist=999999999;
     let fTo;
     let fFrom;
-    let x;
-    let y;
+    let x=9999999999;
+    let y=9999999999;
     let i=-1;
     let dist;
 
@@ -559,14 +591,7 @@ getClosestPointOnLines(pXy,aXys)
 
         for (var n = 1 ; n < aXys.length ; n++) {
 
-            if (aXys[n].pt.x != aXys[n - 1].pt.x) 
-			{
-                var a = (aXys[n].pt.y - aXys[n - 1].pt.y) / (aXys[n].pt.x - aXys[n - 1].pt.x);
-                var b = aXys[n].pt.y - a * aXys[n].pt.x;
-                dist = Math.abs(a * pXy.x + b - pXy.y) / Math.sqrt(a * a + 1);
-            }
-            else
-                dist = Math.abs(pXy.x - aXys[n].pt.x)
+			dist=this.getdisttoline(aXys[n - 1].pt, aXys[n ].pt,pXy);
 
             // length^2 of line segment 
             var rl2 = Math.pow(aXys[n].pt.y - aXys[n - 1].pt.y, 2) + Math.pow(aXys[n].pt.x - aXys[n - 1].pt.x, 2);
@@ -587,7 +612,8 @@ getClosestPointOnLines(pXy,aXys)
             if (calcrl2 > rl2)
                 dist = Math.sqrt(Math.min(ln2, lnm12));
 
-            if ((minDist == null) || (minDist > dist)) {
+            if ((minDist == null) || (minDist > dist)) 
+				{
                 if (calcrl2 > rl2) {
                     if (lnm12 < ln2) {
                         fTo = 0;//nearer to previous point
@@ -616,41 +642,202 @@ getClosestPointOnLines(pXy,aXys)
 
     }
 
-    return { 'x': x, 'y': y, 'i': i, 'fTo': fTo, 'fFrom': fFrom };
+    return { 'pt':{'x': x, 'y': y}, 'i': i, 'fTo': fTo, 'fFrom': fFrom ,'md':minDist};
 }
+
+GetNearestLine(loc)
+{
+
+	let Pathd=null;
+	let Walld=null;
+	let Measd=null;
+
+if(this.Paths.length)
+{
+Pathd=this.getClosestPointOnLines(loc,this.Paths);
+if(Pathd.fTo<0.5)  Pathd.i--;
+Pathd['a']=this.Paths;
+}
+
+
+if(this.Walls.length>0)
+{
+	for(let i=0; i<this.Walls.length; i++)
+	{
+	 let d=this.getdisttoline(this.Walls[i].start,this.Walls[i].end,loc);
+	 if(Walld==null)
+	 {
+		 Walld={'md':d,'i':i};
+	 }
+	 else
+	 {
+		if(Walld.md>d) {Walld.i=i; Walld.md=d;};
+	 }
+
+	}
+	Walld['a']=this.Walls;
+}
+
+
+if(this.Measurements.length>0)
+{
+	for(let i=0; i<this.Measurements.length; i++)
+	{
+	 let d=this.getdisttoline(this.Measurements[i].start,this.Measurements[i].end,loc);
+	 if(Measd==null)
+	 {
+		 Measd={'md':d,'i':i};
+	 }
+	 else
+	 {
+		if(Measd.md>d) {Measd.i=i; Measd.md=d;};
+	 }
+
+	}
+	Measd['a']=this.Measurements;
+
+}
+
+//Pathd,Wallsd,Measd
+let mind=null;
+
+if(Pathd!=null) mind=Pathd;
+
+if(Walld!=null) 
+{
+if((mind==null) || (mind.md>Walld.md)) mind=Walld;
+}
+
+if(Measd!=null) 
+{
+if((mind==null) || (mind.md>Measd.md)) mind=Measd;
+}
+return mind;
+}
+
 
 DoDeleteObject(loc)
 {
-let r=this.getClosestPointOnLines(loc,this.Paths);
-if(r.i>=0)
-{
-if(r.fTo>0.5) 
- {
-   this.Paths.splice(r.i,1);
- }
-else
-{
-	this.Paths.splice(r.i-1,1);
-}
+let mind= this.GetNearestLine(loc);
 
-}
+if(mind==null) return;
+
+
+mind.a.splice(mind.i,1);
+
 }
 
 
 DoSplitObject(loc)
 {
+let mind= this.GetNearestLine(loc);
+if(mind==null) return;
+
+if(mind.a===this.Paths)
+{
+if(mind.fTo<0.5)  mind.i++;
+//X.Y is between i -1 and i
+this.Paths.splice(mind.i,0,new Path(loc));
+}
+else
+if(mind.a===this.Walls)
+{
+let i=mind.i;
+let ep={'x':this.Walls[i].end.x,'y':this.Walls[i].end.y};
+this.Walls.push(new Wall(loc,ep));
+this.Walls[i].end.x=loc.x;
+this.Walls[i].end.y=loc.y;
+}
+else
+if(mind.a===this.Measurements)
+{
+let i=mind.i;
+let ep={'x':this.Measurements[i].end.x,'y':this.Measurements[i].end.y};
+this.Measurements.push(new Measurement(loc,ep));
+this.Measurements[i].end.x=loc.x;
+this.Measurements[i].end.y=loc.y;
+this.Measurements[i].recalculate();
 }
 
+
 }
 
+StartPointDrag(loc)
+{//Find nearest point
+//Then set this.down_p= that point;
+this.drag_point=null;
 
+	if(this.Paths.length)
+	{
+		for(var i=1; i<this.Paths.length; i++)
+		{
+		 let dm=distance_pt(this.Paths[i].pt,loc);
+		 if((this.drag_point==null) ||(this.drag_point.d>dm))
+		 {
+			 this.drag_point={'d':dm, 'pt':this.Paths[i].pt};
+		 }
+		}
+
+	}
+
+	if(this.Walls.length)
+	{
+	for(var i=0; i<this.Walls.length; i++)
+	{
+	 let dm=distance_pt(this.Walls[i].start,loc);
+	 if((this.drag_point==null) ||(this.drag_point.d>dm))
+	 {
+		 this.drag_point={'d':dm, 'pt':this.Walls[i].start};
+	 }
+	 dm=distance_pt(this.Walls[i].end,loc);
+	 if((this.drag_point==null) ||(this.drag_point.d>dm))
+	 {
+		 this.drag_point={'d':dm, 'pt':this.Walls[i].end};
+	 }
+
+	}
+	}
+	
+	if(this.Measurements.length)
+	{
+	for(var i=0; i<this.Measurements.length; i++)
+	{
+	 let dm=distance_pt(this.Measurements[i].start,loc);
+	 if((this.drag_point==null) ||(this.drag_point.d>dm))
+	 {
+		 this.drag_point={'d':dm, 'pt':this.Measurements[i].start,'m':this.Measurements[i] };
+	 }
+	 dm=distance_pt(this.Measurements[i].end,loc);
+	 if((this.drag_point==null) ||(this.drag_point.d>dm))
+	 {
+		 this.drag_point={'d':dm, 'pt':this.Measurements[i].end,'m':this.Measurements[i] };
+	 }
+
+	}
+	}
+
+}
+
+EndPointDrag(loc)
+{
+	if((this.drag_point!=null) && (this.drag_point!=undefined))
+		{
+		this.drag_point.pt.x=loc.x;
+		this.drag_point.pt.y=loc.y;
+		if (typeof this.drag_point.m === "undefined") return;
+		 this.drag_point.m.recalculate();
+       }
+
+}
+
+}//end of carshow
 
 
 
 
 function Copy()
 {
-  var obj={'Path':TheOneCar.Paths,'Walls':TheOneCar.Walls};
+  var obj={'Path':TheOneCar.Paths,'Measurements':TheOneCar.Walls};
   var text=JSON.stringify(obj);
 
   window.prompt("Copy to clipboard: Ctrl+C, Enter", text);

@@ -352,16 +352,16 @@ function drawGrid(context, color, stepx, stepy) {
 }
 
   const ICON_RECTANGLES = [
-      { x: 13.5, y: 13.5, w: 48, h: 48  , t:'P'},
-      { x: 13.5, y: 71.5, w: 48, h: 48  , t:'W'},
-      { x: 13.5, y: 129.5, w: 48, h: 48 , t:'C'},
-      { x: 13.5, y: 187.5, w: 48, h: 48 , t:'M'},
-      { x: 13.5, y: 245.5, w: 48, h: 48 , t:'X'},
-      { x: 13.5, y: 303.5, w: 48, h: 48 , t:'?'},
-      { x: 13.5, y: 361.5, w: 48, h: 48 , t:'?'},
-      { x: 13.5, y: 419.5, w: 48, h: 48 , t:'?'},
-      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'?'},
-      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'?'}
+      { x: 13.5, y: 13.5, w: 48, h: 48  , t:'P','ft':'Path'},
+      { x: 13.5, y: 71.5, w: 48, h: 48  , t:'W','ft':'Wall'},
+      { x: 13.5, y: 129.5, w: 48, h: 48 , t:'F','ft':'Feature'},
+      { x: 13.5, y: 187.5, w: 48, h: 48 , t:'M','ft':'Meas'},
+      { x: 13.5, y: 245.5, w: 48, h: 48 , t:'X','ft':'Delete'},
+      { x: 13.5, y: 303.5, w: 48, h: 48 , t:'D','ft':'Drag'},
+      { x: 13.5, y: 361.5, w: 48, h: 48 , t:'S','ft':'Split'},
+      { x: 13.5, y: 419.5, w: 48, h: 48 , t:'?','ft':' '},
+      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'?','ft':' '},
+      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'C','ft':'Curve'}
    ];
 
 
@@ -406,7 +406,10 @@ function IconDraw(context)
 
 	   context.fillStyle = ICON_BACKGROUND_STYLE;
 	   context.fillRect(rect.x, rect.y, rect.w, rect.h);
+	   context.font = '36px Palatino';
 	   context.strokeText(rect.t, rect.x + rect.w/2,rect.y + rect.h/2 + 5);
+	   context.font = '12px Arial';
+	   context.strokeText(rect.ft, rect.x + rect.w/2,rect.y + rect.h - 5);
 	   context.restore();
 	   });
 }
