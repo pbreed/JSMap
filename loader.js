@@ -406,16 +406,11 @@ function setprog(width)
         elem.style.width = width + '%';
 }
 
-function ReadFile() {
-  var input = document.getElementsByTagName("input")[0];
-  var output = document.getElementsByTagName("textarea")[0];
+function ReadFile()
+{
+  var input = document.getElementById('hidden_file');
+
   RunButtonsVis(false);
-
-
-  if (input.files.length === 0) {
-    output.value = 'No file selected';
-    return;
-  }
 
   var fr = new FileReader();
   fr.onload = function()
@@ -435,17 +430,13 @@ function ReadFile() {
 	{
 	 par.parse_char(data[i]);
 	}
-	output.value=('done :'+i.toString()+' of '+arrayLength.toString());
 	
 	setprog(100*i/data.length);
 	
 	if(i==arrayLength)
 	{
-		output.value+=JSON.stringify(par.AccumlatedThings);
-		output.value+='\nRecords:'+par.AccumlatedData.length.toString()+'\n';
 		var et=new Date();
 		var t=et-start_Time;
-		output.value+='Took:'+(t/1000.0).toString()+' Secs\n';
 		
 		clearInterval(mto);
 		RunButtonsVis(true);
@@ -458,19 +449,8 @@ function ReadFile() {
 	}//interval function
 	,1);
 
-	
-
-
-
-//		for (let u of par.ObjectDescriptionMap.values())
-//	    {
-//		output.value+=JSON.stringify(u);
-//		output.value+='\n';
-//		}
-		
   }
 
-//	output.value=JSON.stringify(ObjCount);
 
   fr.readAsArrayBuffer(input.files[0]);
 

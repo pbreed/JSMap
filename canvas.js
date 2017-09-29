@@ -352,16 +352,16 @@ function drawGrid(context, color, stepx, stepy) {
 }
 
   const ICON_RECTANGLES = [
-      { x: 13.5, y: 13.5, w: 48, h: 48  , t:'P','ft':'Path'},
-      { x: 13.5, y: 71.5, w: 48, h: 48  , t:'W','ft':'Wall'},
-      { x: 13.5, y: 129.5, w: 48, h: 48 , t:'F','ft':'Feature'},
-      { x: 13.5, y: 187.5, w: 48, h: 48 , t:'M','ft':'Meas'},
-      { x: 13.5, y: 245.5, w: 48, h: 48 , t:'X','ft':'Delete'},
-      { x: 13.5, y: 303.5, w: 48, h: 48 , t:'D','ft':'Drag'},
-      { x: 13.5, y: 361.5, w: 48, h: 48 , t:'S','ft':'Split'},
-      { x: 13.5, y: 419.5, w: 48, h: 48 , t:'?','ft':' '},
-      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'?','ft':' '},
-      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'C','ft':'Curve'}
+      { x: 13.5, y: 13.5, w: 48, h: 48  , t:'P','ft':'Path', 'cur':'crosshair'},
+      { x: 13.5, y: 71.5, w: 48, h: 48  , t:'W','ft':'Wall','cur':'crosshair'},
+      { x: 13.5, y: 129.5, w: 48, h: 48 , t:'F','ft':'Feature','cur':'default'},
+      { x: 13.5, y: 187.5, w: 48, h: 48 , t:'M','ft':'Meas','cur':'crosshair'},
+      { x: 13.5, y: 245.5, w: 48, h: 48 , t:'X','ft':'Delete','cur':'pointer'},
+      { x: 13.5, y: 303.5, w: 48, h: 48 , t:'D','ft':'Drag','cur':'move'},
+      { x: 13.5, y: 361.5, w: 48, h: 48 , t:'S','ft':'Split','cur':'row-resize'},
+      { x: 13.5, y: 419.5, w: 48, h: 48 , t:'?','ft':' ','cur':'default'},
+      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'?','ft':' ','cur':'default'},
+      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'C','ft':'Curve','cur':'default'}
    ];
 
 
@@ -411,6 +411,7 @@ function IconDraw(context)
 	   context.font = '12px Arial';
 	   context.strokeText(rect.ft, rect.x + rect.w/2,rect.y + rect.h - 5);
 	   context.restore();
+	
 	   });
 }
 
@@ -519,6 +520,8 @@ function IconMouseDown(e)
 		   if (ictx.isPointInPath(loc.x, loc.y))
 			  {
 			   selectedRect =rect;
+			   data_display.NewMenuSelect(rect.t);
+			   canvas.style.cursor=rect.cur;
 			 }
 		});
 	}

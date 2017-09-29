@@ -10,7 +10,7 @@
     width: 1%;
     height: 30px;
     background-color: green;
-}        
+}
 
 #RunButtons {
 
@@ -42,29 +42,38 @@
 </head>
 
 <body>
-    <span id=FileChoose"><input type="file" onchange="ReadFile()" /></span>
+
+
+    <!-- Button to invoke the click of the File Input -->
+  </form>
+    <span >
+	<input id='hidden_file' type="file" onchange="ReadFile()" style="display:none;"/>
+	<input id='hidden_json_file' type="file" onchange="ReadPathsFile()" style="display:none;"/>
+	<input type="button" onclick="HandleFileButtonClick();" value="Data Load" style="background: red;">
+	<input type="button" onclick="HandleJsonButtonClick();" value="Paths/Walls" style="background: red;">
+	</span>
 	<span class='RunButtons' >
 	<INPUT TYPE="BUTTON" VALUE="Rewind" ONCLICK="Rewind()"/>
 	<INPUT TYPE="BUTTON" VALUE="Run" ONCLICK="Run()"/>
 	<INPUT TYPE="BUTTON" VALUE="Pause" ONCLICK="Pause()" />
 	<INPUT TYPE="BUTTON" VALUE="BStep" ONCLICK="BStep()" />
 	<INPUT TYPE="BUTTON" VALUE="Step" ONCLICK="Step()" />
-	<INPUT TYPE="BUTTON" VALUE="Jump" ONCLICK="Jump()"/> 
-	<INPUT TYPE="BUTTON" VALUE="Copy" ONCLICK="Copy()"/> 
+	<INPUT TYPE="BUTTON" VALUE="Jump" ONCLICK="Jump()"/>
+	<a download id='DataSet'>download</a>
     <textarea cols="40" rows="1" id="labme" ></textarea>
 	</span>
 <br/>
-<textarea cols="100" rows="4" ></textarea>
-
 <div id="myProgress"><div id="myBar"></div>
-
 <canvas id="icon-canvas" width="75" height="550">Canvas not supported</canvas>
 <canvas id="drawing-canvas"  width="760" height="550">Canvas not supported</canvas>
-
 <script type="text/javascript" charset="utf-8" SRC="carshow.js"></script>
 <script type="text/javascript" charset="utf-8" SRC="loader.js"></script>
 <script type="text/javascript" charset="utf-8" SRC="canvas.js"></script>
 <script src="Start.js"></script>
+<script language="JavaScript" type="text/javascript">
+  function HandleFileButtonClick(){document.getElementById('hidden_file').click();}
+  function HandleJsonButtonClick(){document.getElementById('hidden_json_file').click();}
+</script>
 </body>
 </html>
 

@@ -395,17 +395,19 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
 	case 'P': //Path
 	case 'W': //Wall
 	case 'M': //measure
-	case 'D': //Drag
 		{
 		 ctx.beginPath();
 		 ctx.moveTo(this.down_p.x,this.down_p.y);
 		 ctx.lineTo(this.last_p.x,this.last_p.y);
 		 ctx.stroke();
 		}
+		break;
+	case 'D': //Drag
+        break;
 	}
   }
 
- 
+
   if(this.Measurements.length)
   {
 	ctx.save();
@@ -456,7 +458,7 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
 	  let m=this.Paths[0];
 
 	  ctx.moveTo(m.pt.x,m.pt.y);
-	  
+	
 	  for(let i=1; i<this.Paths.length; i++)
 	  {    let m=this.Paths[i];
 		   ctx.lineTo(m.pt.x,m.pt.y);
@@ -511,6 +513,7 @@ else
 if(t=='D')
 {
   this.StartPointDrag(loc);
+  //canvas.style.cursor='move';
 }
 
 
@@ -522,9 +525,14 @@ mousemove(e,adjusted_loc,t)
 if(this.MouseDown!=null)
 {
 this.last_p=loc;
+if(this.MouseDown=='D')
+   {
+	   this.EndPointMove(adjusted_loc);
+   }
 }
 return e.preventDefault() && false;
 }
+
 
 mouseup(e,adjusted_loc,t)
 {
@@ -543,8 +551,10 @@ mouseup(e,adjusted_loc,t)
 		this.DoDeleteObject(adjusted_loc);
 	break;
 
-	case 'D': 
-	     this.EndPointDrag(loc);
+	case 'D':
+	     this.EndPointDrag(adjusted_loc);
+//		 canvas.style.cursor='pointer';
+
 	break;
 
 	case 'S':
@@ -562,7 +572,7 @@ return e.preventDefault() && false;
 getdisttoline(l1,l2,pXy)
 {
  let dist;
-	if (l2.x != l1.x) 
+	if (l2.x != l1.x)
  {
 	 var a = (l2.y - l1.y) / (l2.x - l1.x);
 	 var b = l2.y - a * l2.x;
@@ -576,7 +586,7 @@ getdisttoline(l1,l2,pXy)
 
 }
 
-getClosestPointOnLines(pXy,aXys) 
+getClosestPointOnLines(pXy,aXys)
 {
 
     let minDist=999999999;
@@ -593,7 +603,7 @@ getClosestPointOnLines(pXy,aXys)
 
 			dist=this.getdisttoline(aXys[n - 1].pt, aXys[n ].pt,pXy);
 
-            // length^2 of line segment 
+            // length^2 of line segment
             var rl2 = Math.pow(aXys[n].pt.y - aXys[n - 1].pt.y, 2) + Math.pow(aXys[n].pt.x - aXys[n - 1].pt.x, 2);
 
             // distance^2 of pt to end line segment
@@ -612,7 +622,7 @@ getClosestPointOnLines(pXy,aXys)
             if (calcrl2 > rl2)
                 dist = Math.sqrt(Math.min(ln2, lnm12));
 
-            if ((minDist == null) || (minDist > dist)) 
+            if ((minDist == null) || (minDist > dist))
 				{
                 if (calcrl2 > rl2) {
                     if (lnm12 < ln2) {
@@ -703,12 +713,12 @@ let mind=null;
 
 if(Pathd!=null) mind=Pathd;
 
-if(Walld!=null) 
+if(Walld!=null)
 {
 if((mind==null) || (mind.md>Walld.md)) mind=Walld;
 }
 
-if(Measd!=null) 
+if(Measd!=null)
 {
 if((mind==null) || (mind.md>Measd.md)) mind=Measd;
 }
@@ -825,20 +835,66 @@ EndPointDrag(loc)
 		this.drag_point.pt.x=loc.x;
 		this.drag_point.pt.y=loc.y;
 		if (typeof this.drag_point.m === "undefined") return;
-		 this.drag_point.m.recalculate();
+		 this.drag_point.m.recalculate()
        }
 
 }
+
+EndPointMove(loc)
+{
+	if((this.drag_point!=null) && (this.drag_point!=undefined))
+		{
+		this.drag_point.pt.x=loc.x;
+		this.drag_point.pt.y=loc.y;
+		if (typeof this.drag_point.m === "undefined") return;
+	    this.drag_point.m.recalculate();
+       }
+
+}
+NewMenuSelect(t)
+{
+}
+
 
 }//end of carshow
 
 
 
+var dobj=document.getElementById('DataSet');
+var contents="This is a test file";
 
-function Copy()
+
+dobj.onclick= function (e) {
+var obj={'Path':TheOneCar.Paths,'Walls':TheOneCar.Walls,'Measurements':TheOneCar.Measurements};
+dobj.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(obj)));
+};
+
+dobj.addEventListener('contextmenu', function(ev)
 {
-  var obj={'Path':TheOneCar.Paths,'Walls':TheOneCar.Walls,'Measurements':TheOneCar.Measurements};
-  var text=JSON.stringify(obj);
+var obj={'Path':TheOneCar.Paths,'Walls':TheOneCar.Walls,'Measurements':TheOneCar.Measurements};
+dobj.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(obj)));
+    return true;
+}, false);
 
-  window.prompt("Copy to clipboard: Ctrl+C, Enter", text);
+
+function ReadPathsFile() {
+  var input = document.getElementById('hidden_json_file');
+
+  var fr = new FileReader();
+  fr.onload = function()
+  {
+	  var jobj=JSON.parse(fr.result);
+	  TheOneCar.Paths=jobj.Path;
+
+	  TheOneCar.Measurements=[];
+
+	  jobj.Measurements.forEach(function (item,index){TheOneCar.Measurements.push(new Measurement(item.start,item.end));});
+
+	  TheOneCar.Walls=jobj.Walls;
+  }
+
+  fr.readAsText(input.files[0]);
+
 }
+
+
