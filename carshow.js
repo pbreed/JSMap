@@ -430,8 +430,9 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
   for(let i=0; i<this.Walls.length; i++)
   {  let m=this.Walls[i];
 	   ctx.beginPath();
-	   ctx.moveTo(m.start.x,m.start.y);
+	   ctx.arc(m.start.x,m.start.y,3,0,2*Math.PI);
 	   ctx.lineTo(m.end.x,m.end.y);
+	   ctx.arc(m.end.x,m.end.y,3,0,2*Math.PI);
 	   ctx.stroke();
   }
   ctx.restore();
@@ -451,9 +452,17 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
 
 	  ctx.moveTo(m.pt.x,m.pt.y);
 	  
-	  for(let i=0; i<this.Paths.length; i++)
+	  for(let i=1; i<this.Paths.length; i++)
 	  {    let m=this.Paths[i];
 		   ctx.lineTo(m.pt.x,m.pt.y);
+		   ctx.stroke();
+	  }
+
+
+	  for(let i=0; i<this.Paths.length; i++)
+	  {    let m=this.Paths[i];
+		   ctx.beginPath();
+		   ctx.arc(m.pt.x,m.pt.y,3,0,2*Math.PI);
 		   ctx.stroke();
 	  }
 	  ctx.restore();
@@ -519,6 +528,14 @@ mouseup(e,adjusted_loc,t)
 	case 'W': //measure
 	  this.Walls.push(new Wall(this.down_p,adjusted_loc));
     break;
+	case 'X':
+		this.DoDeleteObject(adjusted_loc);
+	break;
+
+	case 'S':
+		this.DoSplitObject(adjusted_loc);
+	break
+
 
 
 	}
@@ -527,7 +544,108 @@ return e.preventDefault() && false;
 }
 
 
+getClosestPointOnLines(pXy,aXys) 
+{
+
+    let minDist;
+    let fTo;
+    let fFrom;
+    let x;
+    let y;
+    let i=-1;
+    let dist;
+
+    if (aXys.length > 1) {
+
+        for (var n = 1 ; n < aXys.length ; n++) {
+
+            if (aXys[n].pt.x != aXys[n - 1].pt.x) 
+			{
+                var a = (aXys[n].pt.y - aXys[n - 1].pt.y) / (aXys[n].pt.x - aXys[n - 1].pt.x);
+                var b = aXys[n].pt.y - a * aXys[n].pt.x;
+                dist = Math.abs(a * pXy.x + b - pXy.y) / Math.sqrt(a * a + 1);
+            }
+            else
+                dist = Math.abs(pXy.x - aXys[n].pt.x)
+
+            // length^2 of line segment 
+            var rl2 = Math.pow(aXys[n].pt.y - aXys[n - 1].pt.y, 2) + Math.pow(aXys[n].pt.x - aXys[n - 1].pt.x, 2);
+
+            // distance^2 of pt to end line segment
+            var ln2 = Math.pow(aXys[n].pt.y - pXy.y, 2) + Math.pow(aXys[n].pt.x - pXy.x, 2);
+
+            // distance^2 of pt to begin line segment
+            var lnm12 = Math.pow(aXys[n - 1].pt.y - pXy.y, 2) + Math.pow(aXys[n - 1].pt.x - pXy.x, 2);
+
+            // minimum distance^2 of pt to infinite line
+            var dist2 = Math.pow(dist, 2);
+
+            // calculated length^2 of line segment
+            var calcrl2 = ln2 - dist2 + lnm12 - dist2;
+
+            // redefine minimum distance to line segment (not infinite line) if necessary
+            if (calcrl2 > rl2)
+                dist = Math.sqrt(Math.min(ln2, lnm12));
+
+            if ((minDist == null) || (minDist > dist)) {
+                if (calcrl2 > rl2) {
+                    if (lnm12 < ln2) {
+                        fTo = 0;//nearer to previous point
+                        fFrom = 1;
+                    }
+                    else {
+                        fFrom = 0;//nearer to current point
+                        fTo = 1;
+                    }
+                }
+                else {
+                    // perpendicular from point intersects line segment
+                    fTo = ((Math.sqrt(lnm12 - dist2)) / Math.sqrt(rl2));
+                    fFrom = ((Math.sqrt(ln2 - dist2)) / Math.sqrt(rl2));
+                }
+                minDist = dist;
+                i = n;
+            }
+        }
+
+        var dx = aXys[i - 1].pt.x - aXys[i].pt.x;
+        var dy = aXys[i - 1].pt.y - aXys[i].pt.y;
+
+        x = aXys[i - 1].pt.x - (dx * fTo);
+        y = aXys[i - 1].pt.y - (dy * fTo);
+
+    }
+
+    return { 'x': x, 'y': y, 'i': i, 'fTo': fTo, 'fFrom': fFrom };
 }
+
+DoDeleteObject(loc)
+{
+let r=this.getClosestPointOnLines(loc,this.Paths);
+if(r.i>=0)
+{
+if(r.fTo>0.5) 
+ {
+   this.Paths.splice(r.i,1);
+ }
+else
+{
+	this.Paths.splice(r.i-1,1);
+}
+
+}
+}
+
+
+DoSplitObject(loc)
+{
+}
+
+}
+
+
+
+
 
 
 function Copy()
