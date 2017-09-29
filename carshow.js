@@ -28,6 +28,26 @@ class Measurement
  }
 }
 
+class Path
+{
+ constructor(ep)
+ {
+ this.pt=ep;
+ }
+}
+
+class Wall
+{
+ constructor(sp,ep)
+ {
+ this.start=sp;
+ this.end=ep;
+ }
+}
+
+
+var TheOneCar;
+
 
 const ODOSCALE = 4.58*.93;
 
@@ -52,10 +72,19 @@ constructor(data)
   this.down_p=null;
   this.MouseDown='?';
   this.Measurements=[];
+  this.Paths=[];
+  this.Walls=[];
+  TheOneCar=this;
+
   for(var i=0; i<data.length; i++)
 	{
 	this.scanone(data[i]);
 	}
+  if(this.car_States.length==0)
+  {
+	 let vv={'name':'onepush'};
+	 this.scanone(vv);
+  }
 
   this.sina=[];
   this.cosa=[];
@@ -73,6 +102,14 @@ constructor(data)
 scanone(v){
   switch (v.name)
   {
+  case 'onepush':
+	  this.car_States.push(new carstate(0,0,0,this.last_slidar,this.LastLidar));
+	  this.car_States.push(new carstate(0,0,0,this.last_slidar,this.LastLidar));
+	  this.car_States.push(new carstate(0,0,0,this.last_slidar,this.LastLidar));
+	  this.expand_extent(-5,-5);
+	  this.expand_extent(5,5);
+	  break;
+
   case 'IMUReportObj':
 	  {
 	 if(this.lastOdo==null)
@@ -97,6 +134,8 @@ scanone(v){
 		 this.lastOdo=v.Odo;
 
 	  }
+	 else
+		 this.last_slidar=v.lidar;
 	 }
 	break;
 case 'LidarReadingObj':
@@ -153,12 +192,14 @@ drawBase(ctx,xo,yo)
 	}
 	ctx.stroke();
 
+	this.Starting_Position={'x':this.car_States[0].x+xo,'y':-this.car_States[0].y+yo};
+
 	for(let i=1; i<arrayLength; i++)
     { let h=this.car_States[i].h
 	h-=90;
     let s=Math.sin(-h*Math.PI/180.0);
     let c=Math.cos(-h*Math.PI/180.0);
-    let yy=6+this.car_States[i].slidar/(1250*2.54);//    1250=1cm
+    let yy=2+this.car_States[i].slidar/(1250*2.54);//    1250=1cm
 	let x=this.car_States[i].x+xo;
 	let y=-this.car_States[i].y+yo;
 	if(yy>12)
@@ -256,7 +297,7 @@ xx=100;
 ctx.lineTo((c*xx)+(-s*yy)+x,(-((c*yy)+(s*xx)))+y);
 ctx.stroke();
 ctx.restore();
-nl=6+nl/(1250*2.54);
+nl=2+nl/(1250*2.54);
 
 if( (nl> Math.abs(2*b)) && (p.m>-0.2) && (p.m < 0.2))
 {
@@ -314,7 +355,7 @@ ctx.lineTo((c*xx)+(-s*yy)+x,(-((c*yy)+(s*xx)))+y);
 }
 ctx.stroke();
 
-let dist=6+l/(1250*2.54);//    1250=1cm
+let dist=2+l/(1250*2.54);//    1250=1cm
 
 ctx.beginPath();
 ctx.strokeStyle= 'rgba(0,255,0,1.0)';
@@ -347,6 +388,8 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
   {
 	switch(this.MouseDown)
 	{
+	case 'P': //measure
+	case 'W': //measure
 	case 'M': //measure
 		{
 		 ctx.beginPath();
@@ -357,6 +400,7 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
 	}
   }
 
+ 
   if(this.Measurements.length)
   {
 	ctx.save();
@@ -377,6 +421,43 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
 
   }
 
+  if(this.Walls.length)
+{
+  ctx.save();
+  ctx.strokeStyle= 'rgba(0,0,0,1.0)';
+  ctx.lineWidth=5;
+
+  for(let i=0; i<this.Walls.length; i++)
+  {  let m=this.Walls[i];
+	   ctx.beginPath();
+	   ctx.moveTo(m.start.x,m.start.y);
+	   ctx.lineTo(m.end.x,m.end.y);
+	   ctx.stroke();
+  }
+  ctx.restore();
+
+}
+
+
+  if(this.Paths.length)
+  {
+	  ctx.save();
+	  ctx.strokeStyle= 'rgba(0,128,0,1.0)';
+	  ctx.font = '14px Palatino';
+	  ctx.textAlign = 'center';
+	  ctx.textBaseline = 'middle';
+	  ctx.beginPath();
+	  let m=this.Paths[0];
+
+	  ctx.moveTo(m.pt.x,m.pt.y);
+	  
+	  for(let i=0; i<this.Paths.length; i++)
+	  {    let m=this.Paths[i];
+		   ctx.lineTo(m.pt.x,m.pt.y);
+		   ctx.stroke();
+	  }
+	  ctx.restore();
+  }
 
 
 /*  if(this.last_m_x!=null)
@@ -401,6 +482,18 @@ mousedown(e,adjusted_loc,t)
 this.MouseDown=t;
 this.last_p=loc;
 this.down_p=loc;
+
+if(t=='P')
+{
+ if(this.Paths.length)
+	 this.down_p=this.Paths[this.Paths.length-1].pt;
+ else
+  {
+    this.down_p=this.Starting_Position;
+	this.Paths.push(new Path(this.down_p));
+  }
+}
+
 return e.preventDefault() && false;
 }
 
@@ -420,10 +513,27 @@ mouseup(e,adjusted_loc,t)
 	case 'M': //measure
 		 this.Measurements.push(new Measurement(this.down_p,adjusted_loc));
 	break;
+	case 'P':
+		this.Paths.push(new Path(adjusted_loc));
+	break;
+	case 'W': //measure
+	  this.Walls.push(new Wall(this.down_p,adjusted_loc));
+    break;
+
+
 	}
 this.MouseDown=null;
 return e.preventDefault() && false;
 }
 
 
+}
+
+
+function Copy()
+{
+  var obj={'Path':TheOneCar.Paths,'Walls':TheOneCar.Walls};
+  var text=JSON.stringify(obj);
+
+  window.prompt("Copy to clipboard: Ctrl+C, Enter", text);
 }
