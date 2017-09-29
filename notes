@@ -1,12 +1,34 @@
 Add:
 X:Draw Line End handles...
-X:Delete 
+X:Delete
 X:Split
 X:Move
+X:Save To Blob
+X"RestorFromBlob
+
 
 Corner
-EdgeFollow
-Save To Blob
-RestorFromBlob
+X:   Select
+     Draw Perp
+     Pop Dialog {Update fore/aft and or Left Right}
+
+Edge
+X:   Select
+    Pop dialog:
+         Follow with Make Parellel y/n
+	
+         Edge Intercept
+	         Update fore/aft and or left/right
+		
+Features:
+X:Select
+   Pop Dialog, Speed, Stop, restart etc...
+
+Decorate Paths with edge and Corner displays...
+Decorate Path segments...
+
+Export to Car... directly????
+
+Draw Arcs/Circles?
 
 

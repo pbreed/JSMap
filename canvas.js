@@ -359,9 +359,8 @@ function drawGrid(context, color, stepx, stepy) {
       { x: 13.5, y: 245.5, w: 48, h: 48 , t:'X','ft':'Delete','cur':'pointer'},
       { x: 13.5, y: 303.5, w: 48, h: 48 , t:'D','ft':'Drag','cur':'move'},
       { x: 13.5, y: 361.5, w: 48, h: 48 , t:'S','ft':'Split','cur':'row-resize'},
-      { x: 13.5, y: 419.5, w: 48, h: 48 , t:'?','ft':' ','cur':'default'},
-      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'?','ft':' ','cur':'default'},
-      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'C','ft':'Curve','cur':'default'}
+      { x: 13.5, y: 419.5, w: 48, h: 48 , t:'E','ft':'Edge','cur':'default'},
+      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'C','ft':'Corner','cur':'default'}
    ];
 
 

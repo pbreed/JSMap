@@ -78,6 +78,9 @@ constructor(data)
   this.Measurements=[];
   this.Paths=[];
   this.Walls=[];
+  this.HighLightPathPt=null;
+  this.HighLightWallPt=null;
+  this.HighLightCornerPt=null;
   TheOneCar=this;
 
   for(var i=0; i<data.length; i++)
@@ -377,13 +380,26 @@ drawState(ctx,pos,xo,yo)
 {
 this.drawLidar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].rlidar,this.car_States[pos].slidar);
 this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].slidar);
-  if(this.corners.length>0)
+
+if(this.corners.length>0)
   {
 	for(let i=0; i<this.corners.length; i++)
 	{
+		if(this.HighLightCornerPt==i)
+		{
+		ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+        ctx.beginPath();
+		ctx.arc(this.corners[i].x,this.corners[i].y,10,0,2*Math.PI);
+		ctx.stroke();
+		ctx.strokeStyle= 'rgba(0,0,0,1.0)';
+		}
+		else
+		{
 		ctx.beginPath();
 		ctx.arc(this.corners[i].x,this.corners[i].y,10,0,2*Math.PI);
 		ctx.stroke();
+
+		}
 
 	}
   }
@@ -436,11 +452,25 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
 
   for(let i=0; i<this.Walls.length; i++)
   {  let m=this.Walls[i];
+       if(this.HighLightWallPt==i)
+	   {
+	    ctx.strokeStyle= 'rgba(255,0,0,1.0)';
 	   ctx.beginPath();
 	   ctx.arc(m.start.x,m.start.y,3,0,2*Math.PI);
 	   ctx.lineTo(m.end.x,m.end.y);
 	   ctx.arc(m.end.x,m.end.y,3,0,2*Math.PI);
 	   ctx.stroke();
+	   ctx.strokeStyle= 'rgba(0,0,0,1.0)';
+
+	   }
+	   else
+	   {
+	   ctx.beginPath();
+	   ctx.arc(m.start.x,m.start.y,3,0,2*Math.PI);
+	   ctx.lineTo(m.end.x,m.end.y);
+	   ctx.arc(m.end.x,m.end.y,3,0,2*Math.PI);
+	   ctx.stroke();
+	   }
   }
   ctx.restore();
 
@@ -461,7 +491,24 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
 	
 	  for(let i=1; i<this.Paths.length; i++)
 	  {    let m=this.Paths[i];
+		
+	   if(this.HighLightPathPt==i)
+	   {
+		   ctx.stroke();
+		   ctx.beginPath();
+		   ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+		   ctx.moveTo(this.Paths[i-1].pt.x,this.Paths[i-1].pt.y);
 		   ctx.lineTo(m.pt.x,m.pt.y);
+		   ctx.stroke();
+           ctx.strokeStyle= 'rgba(0,128,0,1.0)';
+		   ctx.beginPath();
+		   ctx.moveTo(m.pt.x,m.pt.y);
+
+	   }
+	   else
+	   {
+        ctx.lineTo(m.pt.x,m.pt.y);
+	   }
 		   ctx.stroke();
 	  }
 
@@ -499,7 +546,9 @@ this.MouseDown=t;
 this.last_p=loc;
 this.down_p=loc;
 
-if(t=='P')
+switch(t)
+{
+case 'P':
 {
  if(this.Paths.length)
 	 this.down_p=this.Paths[this.Paths.length-1].pt;
@@ -509,11 +558,24 @@ if(t=='P')
 	this.Paths.push(new Path(this.down_p));
   }
 }
-else
-if(t=='D')
+break;
+case 'D':
 {
   this.StartPointDrag(loc);
   //canvas.style.cursor='move';
+}
+break;
+case 'E':
+case 'F':
+case 'C':
+	{
+	   if(this.Paths.length)
+	   {
+		   let Pathd=this.getClosestPointOnLines(adjusted_loc,this.Paths);
+		   this.HighLightPathPt=Pathd.i;
+	   }
+	}
+break;
 }
 
 
@@ -554,8 +616,60 @@ mouseup(e,adjusted_loc,t)
 	case 'D':
 	     this.EndPointDrag(adjusted_loc);
 //		 canvas.style.cursor='pointer';
+    break;
+	case 'C':
+		{
+			if(this.corners.length>0)
+			{
+			let dp=99999999;
+				for(let i=0; i<this.corners.length; i++)
+				{
+		          let d=distance_pt(this.corners[i],adjusted_loc);
+				  if(d<dp)
+				  {
+					dp=d;
+		            this.HighLightCornerPt=i;
+				  }
+				}
+			}
+			this.CornerDialog();
 
+		 }
 	break;
+	
+	case 'E':
+	{
+	
+	 if(this.Walls.length>0)
+	 {
+		 let Walld=null;
+
+		for(let i=0; i<this.Walls.length; i++)
+		{
+		 let d=this.getdisttoline(this.Walls[i].start,this.Walls[i].end,adjusted_loc);
+		 if(Walld==null)
+		 {
+			 Walld={'md':d,'i':i};
+		 }
+		 else
+		 {
+			if(Walld.md>d) {Walld.i=i; Walld.md=d;};
+		 }
+
+		}
+		this.HighLightWallPt=Walld.i;
+     	this.EdgeDialog();
+
+	}
+
+	}
+	break;
+	case 'F':
+		{
+   	     this.FeatureDialog();
+
+		}
+	  break;
 
 	case 'S':
 		this.DoSplitObject(adjusted_loc);
@@ -853,8 +967,21 @@ EndPointMove(loc)
 }
 NewMenuSelect(t)
 {
+	this.HighLightPathPt=null;
+	this.HighLightWallPt=null;
+	this.HighLightCornerPt=null;
 }
 
+
+CornerDialog()
+{
+}
+EdgeDialog()
+{
+}
+FeatureDialog()
+{
+}
 
 }//end of carshow
 
