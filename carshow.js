@@ -837,7 +837,7 @@ EndPointDrag(loc)
 
 function Copy()
 {
-  var obj={'Path':TheOneCar.Paths,'Measurements':TheOneCar.Walls};
+  var obj={'Path':TheOneCar.Paths,'Walls':TheOneCar.Walls,'Measurements':TheOneCar.Measurements};
   var text=JSON.stringify(obj);
 
   window.prompt("Copy to clipboard: Ctrl+C, Enter", text);
