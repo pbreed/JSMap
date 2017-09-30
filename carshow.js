@@ -975,12 +975,15 @@ NewMenuSelect(t)
 
 CornerDialog()
 {
+window.confirm("CornerDialog");
 }
 EdgeDialog()
 {
+window.confirm("EdgeDialog");
 }
 FeatureDialog()
 {
+window.confirm("Feature Dialog");
 }
 
 }//end of carshow
