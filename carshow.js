@@ -37,6 +37,7 @@ class Path
  constructor(ep)
  {
  this.pt=ep;
+ this.Edgev=null;
  }
 }
 
@@ -47,6 +48,18 @@ class Wall
  this.start=sp;
  this.end=ep;
  }
+}
+
+class Edge
+{
+	constructor(intercept,adj_dist, adj_head,pt)
+	{
+	  this.inter=intercept;
+	  this.adj_dist=adj_dist;
+	  this.adj_head=adj_head;
+	  this.pt=pt;
+	}
+
 }
 
 
@@ -78,7 +91,7 @@ constructor(data)
   this.Measurements=[];
   this.Paths=[];
   this.Walls=[];
-  this.HighLightPathPt=null;
+  this.HighLightPathEl=null;
   this.HighLightWallPt=null;
   this.HighLightCornerPt=null;
   TheOneCar=this;
@@ -477,7 +490,7 @@ if(this.corners.length>0)
 }
 
 
-  if(this.Paths.length)
+  if(this.Paths.length>0)
   {
 	  ctx.save();
 	  ctx.strokeStyle= 'rgba(0,128,0,1.0)';
@@ -492,7 +505,7 @@ if(this.corners.length>0)
 	  for(let i=1; i<this.Paths.length; i++)
 	  {    let m=this.Paths[i];
 		
-	   if(this.HighLightPathPt==i)
+	   if(this.HighLightPathEl===m)
 	   {
 		   ctx.stroke();
 		   ctx.beginPath();
@@ -518,10 +531,52 @@ if(this.corners.length>0)
 		   ctx.beginPath();
 		   ctx.arc(m.pt.x,m.pt.y,3,0,2*Math.PI);
 		   ctx.stroke();
+	   if(m.Edgev!=null)
+	   {
+		   ctx.strokeStyle= 'rgba(255,0,255,1.0)';
+		   ctx.beginPath();
+		   if(m.Edgev.inter)
+		   {
+			    ctx.moveTo(m.pt.x,m.pt.y);
+		   }
+		   else
+		   {
+			   ctx.moveTo((m.pt.x+this.Paths[i-1].pt.x)/2,(m.pt.y+this.Paths[i-1].pt.y)/2);
+
+		   }
+
+		   ctx.lineTo(m.Edgev.pt.x,m.Edgev.pt.y);
+		   ctx.stroke();
+           ctx.strokeStyle= 'rgba(0,128,0,1.0)';
+	   }
+
 	  }
 	  ctx.restore();
   }
 
+/*   if(this.Edges.length>0) 
+  {
+	  for(let i=0; i<this.Edges.length; i++)
+	  {
+		  let e=this.Edges[i];
+		  let p1=e.prevpath;
+		  let p2=e.pathpt;        
+		  let wa=e.wallpt;
+		  let p={'x':(p1.pt.x+p2.pt.x)/2,'y':(p1.pt.y+p2.pt.y)/2};
+		  let r=this.getClosestPointOnLineSeg(p,wa.start,wa.end);
+
+		  ctx.strokeStyle= 'rgba(255,0,255,1.0)';
+		  ctx.beginPath();
+		  ctx.moveTo(p.x,p.y);
+		  ctx.lineTo(r.pt.x,r.pt.y);
+		  ctx.stroke();
+
+	  }
+
+
+  }
+
+*/
 
 /*  if(this.last_m_x!=null)
   {
@@ -572,7 +627,7 @@ case 'C':
 	   if(this.Paths.length)
 	   {
 		   let Pathd=this.getClosestPointOnLines(adjusted_loc,this.Paths);
-		   this.HighLightPathPt=Pathd.i;
+		   this.HighLightPathEl=this.Paths[Pathd.i];
 	   }
 	}
 break;
@@ -768,6 +823,15 @@ getClosestPointOnLines(pXy,aXys)
 
     return { 'pt':{'x': x, 'y': y}, 'i': i, 'fTo': fTo, 'fFrom': fFrom ,'md':minDist};
 }
+
+getClosestPointOnLineSeg(pt,l1,l2)
+{
+let aa=[{'pt':{'x':l1.x,'y':l1.y}},
+        {'pt':{'x':l2.x,'y':l2.y}}
+	   ];
+return this.getClosestPointOnLines(pt,aa);
+}
+
 
 GetNearestLine(loc)
 {
@@ -967,7 +1031,7 @@ EndPointMove(loc)
 }
 NewMenuSelect(t)
 {
-	this.HighLightPathPt=null;
+	this.HighLightPathEl=null;
 	this.HighLightWallPt=null;
 	this.HighLightCornerPt=null;
 }
@@ -977,13 +1041,49 @@ CornerDialog()
 {
 window.confirm("CornerDialog");
 }
-EdgeDialog()
-{
-window.confirm("EdgeDialog");
-}
+
 FeatureDialog()
 {
 window.confirm("Feature Dialog");
+}
+
+EdgeDialog()
+{
+let follow=window.prompt("Follow/Intercept/D", "F/I/D");
+if(follow.charAt(0)=='F')
+{
+let make_par=(window.prompt("Make Path/Wall parallel?", "Y/n").charAt(0)=='Y');
+let adjustd=(window.prompt("Adjust Left Right Distance?", "Y/n").charAt(0)=='Y');
+let adjusth=(window.prompt("Adjust Heading?", "Y/n").charAt(0)=='Y');
+let wa=this.Walls[this.HighLightWallPt];
+let pm1=null;
+let p1=this.HighLightPathEl;
+for(let i=1; i<this.Paths.length; i++)
+	 if(this.HighLightPathEl===this.Paths[i])
+	 {
+		 pm1=this.Paths[i-1];
+		 break;
+	 }
+
+let p={'x':(p1.pt.x+pm1.pt.x)/2,'y':(p1.pt.y+pm1.pt.y)/2};
+let r=this.getClosestPointOnLineSeg(p,wa.start,wa.end);
+this.HighLightPathEl.Edgev=new Edge(false,adjustd,adjusth,r.pt);
+}
+else
+if(follow.charAt(0)=='I')
+
+{
+let adjusth=(window.prompt("Adjust Heading?", "Y/n").charAt(0)=='Y');
+let wa=this.Walls[this.HighLightWallPt];
+let pt=this.HighLightPathEl.pt;
+let r=this.getClosestPointOnLineSeg(pt,wa.start,wa.end);
+this.HighLightPathEl.Edgev=new Edge(true,false,adjusth,r.pt);
+}
+if(follow.charAt(0)=='D')
+{
+this.HighLightPathEl.Edgev=null;
+}
+
 }
 
 }//end of carshow
