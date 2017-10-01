@@ -1064,9 +1064,21 @@ for(let i=1; i<this.Paths.length; i++)
 		 pm1=this.Paths[i-1];
 		 break;
 	 }
+if(make_par)
+{
+//pm1 not going to move.
+let r1=this.getClosestPointOnLineSeg(pm1.pt,wa.start,wa.end);
+let r2=this.getClosestPointOnLineSeg(p1.pt,wa.start,wa.end);
+let dx=(r2.pt.x-r1.pt.x);
+let dy=(r2.pt.y-r1.pt.y);
+p1.pt.x=pm1.pt.x+dx;
+p1.pt.y=pm1.pt.y+dy;
+}
+
 
 let p={'x':(p1.pt.x+pm1.pt.x)/2,'y':(p1.pt.y+pm1.pt.y)/2};
 let r=this.getClosestPointOnLineSeg(p,wa.start,wa.end);
+
 this.HighLightPathEl.Edgev=new Edge(false,adjustd,adjusth,r.pt);
 }
 else
