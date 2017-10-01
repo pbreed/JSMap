@@ -512,6 +512,8 @@ if(this.corners.length>0)
 	   ctx.stroke();
 	   }
   }
+ 
+
   ctx.restore();
 
 }
@@ -611,7 +613,6 @@ if(this.corners.length>0)
 	   {
 		   ctx.strokeStyle= 'rgba(255,0,0,1.0)';
 		   ctx.beginPath();
-		   ctx.beginPath();
 		   ctx.moveTo(m.pt.x,m.pt.y);
 		   ctx.lineTo(this.Paths[m.next_seq].pt.x,this.Paths[m.next_seq].pt.y);
 		   ctx.stroke();
@@ -619,6 +620,19 @@ if(this.corners.length>0)
 	   }
 
 	  }
+	  if(this.Waiting_ForContinueClick)
+	  {
+		  ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+		  ctx.font = '34px Palatino';
+		  ctx.textAlign = 'left';
+		  ctx.textBaseline = 'top';
+		  ctx.beginPath();
+		  ctx.strokeText("CLICK on next Path point",10,10);
+	 
+	  }
+
+
+
 	  ctx.restore();
   }
 
