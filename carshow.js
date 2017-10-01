@@ -38,6 +38,7 @@ class Path
  {
  this.pt=ep;
  this.Edgev=null;
+ this.corner_d=null;
  }
 }
 
@@ -59,8 +60,22 @@ class Edge
 	  this.adj_head=adj_head;
 	  this.pt=pt;
 	}
+}
+
+class CornerDetect
+{
+	constructor(adj_l_r, adj_dist,corner_pt,indent, path_pt)
+	{
+	  this.adj_lr=adj_l_r;
+	  this.adj_dist=adj_dist;
+	  this.corner_pt=corner_pt
+	  this.path_pt=path_pt;
+	  this.indent=indent;
+
+	}
 
 }
+
 
 
 var TheOneCar;
@@ -550,17 +565,32 @@ if(this.corners.length>0)
            ctx.strokeStyle= 'rgba(0,128,0,1.0)';
 	   }
 
+
+	   if(m.corner_d!=null)
+	   {
+		   let c=m.corner_d;
+		   ctx.strokeStyle= 'rgba(255,0,255,1.0)';
+		   ctx.beginPath();
+		   ctx.moveTo(c.path_pt.x,c.path_pt.y);
+		   ctx.lineTo(c.corner_pt.x,c.corner_pt.y);
+		   ctx.stroke();
+		   ctx.beginPath();
+		   ctx.arc(c.path_pt.x,c.path_pt.y,2,0,2*Math.PI);
+		   ctx.stroke();
+           ctx.strokeStyle= 'rgba(0,128,0,1.0)';
+	   }
+
 	  }
 	  ctx.restore();
   }
 
-/*   if(this.Edges.length>0) 
+/*   if(this.Edges.length>0)
   {
 	  for(let i=0; i<this.Edges.length; i++)
 	  {
 		  let e=this.Edges[i];
 		  let p1=e.prevpath;
-		  let p2=e.pathpt;        
+		  let p2=e.pathpt;
 		  let wa=e.wallpt;
 		  let p={'x':(p1.pt.x+p2.pt.x)/2,'y':(p1.pt.y+p2.pt.y)/2};
 		  let r=this.getClosestPointOnLineSeg(p,wa.start,wa.end);
@@ -1039,13 +1069,37 @@ NewMenuSelect(t)
 
 CornerDialog()
 {
-window.confirm("CornerDialog");
+let action=window.prompt("New/Delete", "N/D");
+if(action.charAt(0)=='D')
+{
+this.HighLightPathEl.corner_d=null;
+}
+else
+{
+let adjust_lr=(window.prompt("Adjust Left Right Distance?", "Y/n").charAt(0)=='Y');
+let adjust_fa=(window.prompt("Adjust Fore Aft Distance?", "Y/n").charAt(0)=='Y');
+let c=this.corners[this.HighLightCornerPt];
+let cpt={'x':c.x,'y':c.y};
+let pm1=null;
+let p1=this.HighLightPathEl;
+for(let i=1; i<this.Paths.length; i++)
+	 if(this.HighLightPathEl===this.Paths[i])
+	 {
+		 pm1=this.Paths[i-1];
+		 break;
+	 }
+let r=this.getClosestPointOnLineSeg(cpt,pm1.pt,p1.pt);
+p1.corner_d=new CornerDetect(adjust_lr,adjust_fa,cpt,c.indent,r.pt);
+}//Action add
+
+
 }
 
 FeatureDialog()
 {
 window.confirm("Feature Dialog");
 }
+
 
 EdgeDialog()
 {
