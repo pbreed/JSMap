@@ -38,14 +38,56 @@
    cursor: pointer;
 }
 
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+
+/* Modal Content */
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+}
+
 </style>
 </head>
 
 <body>
+ <!-- Modal content -->
+
+<div id="myModal" class="modal">
+  <div class="modal-content">
+	<FORM >
+	 Speed:<input type="text" name="Speed:", value='10' ID='FeatueSpeed'> mph<br>
+     Options: <select id='FeatureOptions' select name="Options">
+	  <option value="none">none</option>
+	  <option value="ped">Pedestrian</option>
+	  <option value="bar">Barrels</option>
+	  <option value="ramp">Ramp</option>
+     </select><BR>
+     Stop at end:<input type="checkbox" id='FeatureStop' name="Stop when done" value="stopatend"><BR>
+	 Continue to Segment <input type="checkbox" id="FeatureContinue" name="continue" value="continue">(Select segment next)<BR> 
+     <input type="button" value="Submit" ONCLICK="FeatureSubmit()">
+     <input type="button" value="Cancel" ONCLICK="FeatureCancel()">
+	</FORM>
+  </div>
+</DIV>
 
 
     <!-- Button to invoke the click of the File Input -->
-  </form>
     <span >
 	<input id='hidden_file' type="file" onchange="ReadFile()" style="display:none;"/>
 	<input id='hidden_json_file' type="file" onchange="ReadPathsFile()" style="display:none;"/>

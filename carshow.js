@@ -39,6 +39,17 @@ class Path
  this.pt=ep;
  this.Edgev=null;
  this.corner_d=null;
+ this.next_seq=null;          
+ this.bStop=false;;      
+ this.Options=null;
+ this.Speed=null;     
+
+
+
+
+
+
+
  }
 }
 
@@ -109,6 +120,7 @@ constructor(data)
   this.HighLightPathEl=null;
   this.HighLightWallPt=null;
   this.HighLightCornerPt=null;
+  this.Waiting_ForContinueClick=false; 
   TheOneCar=this;
 
   for(var i=0; i<data.length; i++)
@@ -543,9 +555,24 @@ if(this.corners.length>0)
 
 	  for(let i=0; i<this.Paths.length; i++)
 	  {    let m=this.Paths[i];
-		   ctx.beginPath();
-		   ctx.arc(m.pt.x,m.pt.y,3,0,2*Math.PI);
-		   ctx.stroke();
+   	   if(m.bStop)
+		   {
+		    ctx.beginPath();
+			ctx.moveTo(m.pt.x+3,m.pt.y+3);
+			ctx.lineTo(m.pt.x-3,m.pt.y-3);
+            ctx.stroke();
+		    ctx.beginPath();
+			ctx.moveTo(m.pt.x+3,m.pt.y-3);
+			ctx.lineTo(m.pt.x-3,m.pt.y+3);
+            ctx.stroke();
+		   }
+		   else
+		   {
+			ctx.beginPath();
+			ctx.arc(m.pt.x,m.pt.y,3,0,2*Math.PI);
+            ctx.stroke();
+		   }
+
 	   if(m.Edgev!=null)
 	   {
 		   ctx.strokeStyle= 'rgba(255,0,255,1.0)';
@@ -578,6 +605,17 @@ if(this.corners.length>0)
 		   ctx.arc(c.path_pt.x,c.path_pt.y,2,0,2*Math.PI);
 		   ctx.stroke();
            ctx.strokeStyle= 'rgba(0,128,0,1.0)';
+	   }
+
+	   if(m.next_seq)
+	   {
+		   ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+		   ctx.beginPath();
+		   ctx.beginPath();
+		   ctx.moveTo(m.pt.x,m.pt.y);
+		   ctx.lineTo(this.Paths[m.next_seq].pt.x,this.Paths[m.next_seq].pt.y);
+		   ctx.stroke();
+
 	   }
 
 	  }
@@ -650,10 +688,15 @@ case 'D':
   //canvas.style.cursor='move';
 }
 break;
-case 'E':
 case 'F':
+	  if(this.Waiting_ForContinueClick)
+	  {
+	   break;
+	  }
+case 'E':
 case 'C':
 	{
+
 	   if(this.Paths.length)
 	   {
 		   let Pathd=this.getClosestPointOnLines(adjusted_loc,this.Paths);
@@ -751,7 +794,16 @@ mouseup(e,adjusted_loc,t)
 	break;
 	case 'F':
 		{
-   	     this.FeatureDialog();
+   	     
+			if(this.Waiting_ForContinueClick)
+				{
+				this.Waiting_ForContinueClick=false;
+				this.FinishFeature(this.down_p); 
+				}
+			else
+			{
+            this.FeatureDialog();
+			}
 
 		}
 	  break;
@@ -1064,6 +1116,8 @@ NewMenuSelect(t)
 	this.HighLightPathEl=null;
 	this.HighLightWallPt=null;
 	this.HighLightCornerPt=null;
+	this.Waiting_ForContinueClick=false; 
+
 }
 
 
@@ -1095,11 +1149,101 @@ p1.corner_d=new CornerDetect(adjust_lr,adjust_fa,cpt,c.indent,r.pt);
 
 }
 
-FeatureDialog()
+GetTextContentById(id)
 {
-window.confirm("Feature Dialog");
+let c=document.getElementById(id);
+let t=c.value;
+console.log('Value =['+t.toString()+'] \n');
+return t;
 }
 
+GetCheckedById(id)
+{
+let c=document.getElementById(id);
+let t=c.checked;
+console.log('Value =['+t.toString()+'] \n');
+return t;
+}
+
+
+
+FeatureDialog()
+{
+let modal = document.getElementById('myModal');
+ modal.style.display = "block";
+}
+
+FinishFeature(loc)
+{
+if(!this.HighLightPathEl)
+{
+    this.Waiting_ForContinueClick=false; 
+	return;
+}
+   
+let bContinue= this.GetCheckedById('FeatureContinue');
+let bStop= this.GetCheckedById('FeatureStop');
+let fOptions=this.GetTextContentById('FeatureOptions');
+let fSpeed=this.GetTextContentById('FeatueSpeed');
+let pe=this.HighLightPathEl;
+
+if((loc!=null) && (bContinue))
+{
+let pa=null;
+
+	if(this.Paths.length)
+	{
+		for(var i=0; i<this.Paths.length; i++)
+		{
+		 let dm=distance_pt(this.Paths[i].pt,loc);
+		 if((pa==null) ||(pa.d>dm))
+		 {
+			 pa={'d':dm, 'i':i};
+		 }
+		}//For
+	}//If
+
+if(pa!=null)
+	pe.next_seq=pa.i;
+else
+    pe.next_seq=null;
+
+}//Loc ! null
+else
+{
+pe.next_seq=null;
+}
+pe.next_seq
+pe.bStop=bStop;
+
+if(fOptions=='none') pe.Options=null;
+else
+pe.options=fOptions;
+
+pe.Speed=fSpeed;
+
+}
+
+FeatureSubmit(ok)
+{
+let modal = document.getElementById('myModal');
+ modal.style.display = "none";
+
+if(ok)
+{
+let bContinue= this.GetCheckedById('FeatureContinue');
+
+if(bContinue) 
+	this.Waiting_ForContinueClick=true;
+else
+    this.Waiting_ForContinueClick=false;                                                                                                                                                                                           
+this.FinishFeature(null);
+}
+else
+{
+this.Waiting_ForContinueClick=true;                                                                                                                                                                                           
+}
+}
 
 EdgeDialog()
 {
@@ -1171,6 +1315,17 @@ var obj={'Path':TheOneCar.Paths,'Walls':TheOneCar.Walls,'Measurements':TheOneCar
 dobj.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(obj)));
     return true;
 }, false);
+
+function FeatureSubmit(e)
+{
+  TheOneCar.FeatureSubmit(true);
+}
+
+function FeatureCancel(e)
+{
+  TheOneCar.FeatureSubmit(false);
+}
+
 
 
 function ReadPathsFile() {

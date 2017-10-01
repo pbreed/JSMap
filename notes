@@ -9,22 +9,26 @@ X"RestorFromBlob
 
 Corner
 X:   Select
-     Draw Perp
-     Pop Dialog {Update fore/aft and or Left Right}
+X:     Draw Perp
+X"     Pop Dialog {Update fore/aft and or Left Right}
 
 Edge
 X:   Select
-    Pop dialog:
-         Follow with Make Parellel y/n
+X:    Pop dialog:
+X:         Follow with Make Parellel y/n
 	
-         Edge Intercept
-	         Update fore/aft and or left/right
-		
+x:         Edge Intercept
+X:	         Update fore/aft and or left/right
+  
+      	
 Features:
 X:Select
-   Pop Dialog, Speed, Stop, restart etc...
+X:Pop Dialog, Speed, Stop, restart etc...
 
-Decorate Paths with edge and Corner displays...
+X:Decorate Paths with edge and Corner displays...
+
+Update two dialogs rather than query
+
 Decorate Path segments...
 
 Export to Car... directly????
