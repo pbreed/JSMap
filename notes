@@ -16,20 +16,18 @@ Edge
 X:   Select
 X:    Pop dialog:
 X:         Follow with Make Parellel y/n
-	
-x:         Edge Intercept
+X:         Edge Intercept
 X:	         Update fore/aft and or left/right
+
+Fix it so it will set heading on intercept... needed?
   
       	
 Features:
 X:Select
-X:Pop Dialog, Speed, Stop, restart etc...
 
 X:Decorate Paths with edge and Corner displays...
-
-Update two dialogs rather than query
-
-Decorate Path segments...
+X:Update two dialogs rather than query
+X:Decorate Path segments...
 
 Export to Car... directly????
 

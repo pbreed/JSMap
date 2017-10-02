@@ -579,18 +579,36 @@ if(this.corners.length>0)
 	   {
 		   ctx.strokeStyle= 'rgba(255,0,255,1.0)';
 		   ctx.beginPath();
+		   let p1=m.pt;
+
 		   if(m.Edgev.inter)
 		   {
-			    ctx.moveTo(m.pt.x,m.pt.y);
+		   p1=m.pt;
 		   }
 		   else
 		   {
-			   ctx.moveTo((m.pt.x+this.Paths[i-1].pt.x)/2,(m.pt.y+this.Paths[i-1].pt.y)/2);
-
+			   p1={'x':(m.pt.x+this.Paths[i-1].pt.x)/2, 'y':(m.pt.y+this.Paths[i-1].pt.y)/2};
+		   }
+		   ctx.moveTo(p1.x,p1.y);
+           ctx.lineTo(m.Edgev.pt.x,m.Edgev.pt.y);
+		   ctx.stroke();
+		   if((m.Edgev.adj_dist) ||(m.Edgev.adj_head!=null))
+		   {
+			 let lab;
+             if(m.Edgev.adj_dist)
+			 {
+				 if(m.Edgev.adj_head!=null) lab='H:D';
+				 else lab='D';
+			 }
+			 else
+				 lab='H';
+			 ctx.font = '14px Palatino';
+			 ctx.textAlign = 'center';
+			 ctx.textBaseline = 'middle';
+			 ctx.beginPath();
+			 ctx.strokeText(lab,(m.Edgev.pt.x+p1.x)/2 ,(m.Edgev.pt.y+p1.y)/2 );
 		   }
 
-		   ctx.lineTo(m.Edgev.pt.x,m.Edgev.pt.y);
-		   ctx.stroke();
            ctx.strokeStyle= 'rgba(0,128,0,1.0)';
 	   }
 
@@ -607,6 +625,26 @@ if(this.corners.length>0)
 		   ctx.arc(c.path_pt.x,c.path_pt.y,2,0,2*Math.PI);
 		   ctx.stroke();
            ctx.strokeStyle= 'rgba(0,128,0,1.0)';
+
+
+		   if((m.corner_d.adj_lr) ||(m.corner_d.adj_dist))
+		   {
+			   let lab;
+			   if(m.corner_d.adj_lr)
+			   {
+				   if(m.corner_d.adj_dist) lab='L:F';
+				   else lab='L';
+			   }
+			   else
+				   lab='F';
+			   ctx.font = '14px Palatino';
+			   ctx.textAlign = 'center';
+			   ctx.textBaseline = 'middle';
+			   ctx.beginPath();
+			   ctx.strokeText(lab,(c.path_pt.x+c.corner_pt.x)/2,(c.path_pt.y+c.corner_pt.y)/2);
+		   }
+
+
 	   }
 
 	   if(m.next_seq)
@@ -1288,6 +1326,9 @@ for(let i=1; i<this.Paths.length; i++)
 		 break;
 	 }
 
+
+if(eMode.charAt(0)=='F')
+{
 if(bPar)
 {
 //pm1 not going to move.
@@ -1299,11 +1340,17 @@ p1.pt.x=pm1.pt.x+dx;
 p1.pt.y=pm1.pt.y+dy;
 }
 
-if(eMode.charAt(0)=='F')
-{
 let p={'x':(p1.pt.x+pm1.pt.x)/2,'y':(p1.pt.y+pm1.pt.y)/2};
 let r=this.getClosestPointOnLineSeg(p,wa.start,wa.end);
-this.HighLightPathEl.Edgev=new Edge(false,bElr,bEhd,r.pt);
+
+if((bEhd) && (bPar)) 
+   {
+	this.HighLightPathEl.Edgev=new Edge(false,bElr,0,r.pt);
+   }
+  else
+  {//No heading
+	  this.HighLightPathEl.Edgev=new Edge(false,bElr,null,r.pt);
+  }
 }
 else
 if(eMode.charAt(0)=='I')
@@ -1311,7 +1358,7 @@ if(eMode.charAt(0)=='I')
 let wa=this.Walls[this.HighLightWallPt];
 let pt=this.HighLightPathEl.pt;
 let r=this.getClosestPointOnLineSeg(pt,wa.start,wa.end);
-this.HighLightPathEl.Edgev=new Edge(true,false,bEhd,r.pt);
+this.HighLightPathEl.Edgev=new Edge(true,false,null,r.pt);
 }
 }
 
