@@ -1135,7 +1135,7 @@ NewMenuSelect(t)
 }
 
 
-CornerDialog()
+ZCornerDialog()
 {
 let action=window.prompt("New/Delete", "N/D");
 if(action.charAt(0)=='D')
@@ -1183,7 +1183,7 @@ return t;
 
 FeatureDialog()
 {
-let modal = document.getElementById('myModal');
+let modal = document.getElementById('FeatureDialog');
  modal.style.display = "block";
 }
 
@@ -1240,7 +1240,7 @@ pe.Speed=fSpeed;
 
 FeatureSubmit(ok)
 {
-let modal = document.getElementById('myModal');
+let modal = document.getElementById('FeatureDialog');
  modal.style.display = "none";
 
 if(ok)
@@ -1255,18 +1255,29 @@ this.FinishFeature(null);
 }
 else
 {
-this.Waiting_ForContinueClick=true;                                                                                                                                                                                           
+this.Waiting_ForContinueClick=false;                                                                                                                                                                                           
 }
 }
 
+
+
 EdgeDialog()
 {
-let follow=window.prompt("Follow/Intercept/D", "F/I/D");
-if(follow.charAt(0)=='F')
+let modal = document.getElementById('EdgeDialog');
+ modal.style.display = "block";
+}
+
+EdgeSubmit(ok)
 {
-let make_par=(window.prompt("Make Path/Wall parallel?", "Y/n").charAt(0)=='Y');
-let adjustd=(window.prompt("Adjust Left Right Distance?", "Y/n").charAt(0)=='Y');
-let adjusth=(window.prompt("Adjust Heading?", "Y/n").charAt(0)=='Y');
+let modal = document.getElementById('EdgeDialog');
+ modal.style.display = "none";
+ if(!ok) return;
+
+let bElr= this.GetCheckedById('EdgeLeftRight'); 
+let bEhd= this.GetCheckedById('EdgeHead'); 
+let bPar= this.GetCheckedById('EdgePar'); 
+let eMode=this.GetTextContentById('EdgeMode'); 
+
 let wa=this.Walls[this.HighLightWallPt];
 let pm1=null;
 let p1=this.HighLightPathEl;
@@ -1276,7 +1287,8 @@ for(let i=1; i<this.Paths.length; i++)
 		 pm1=this.Paths[i-1];
 		 break;
 	 }
-if(make_par)
+
+if(bPar)
 {
 //pm1 not going to move.
 let r1=this.getClosestPointOnLineSeg(pm1.pt,wa.start,wa.end);
@@ -1287,27 +1299,62 @@ p1.pt.x=pm1.pt.x+dx;
 p1.pt.y=pm1.pt.y+dy;
 }
 
-
+if(eMode.charAt(0)=='F')
+{
 let p={'x':(p1.pt.x+pm1.pt.x)/2,'y':(p1.pt.y+pm1.pt.y)/2};
 let r=this.getClosestPointOnLineSeg(p,wa.start,wa.end);
-
-this.HighLightPathEl.Edgev=new Edge(false,adjustd,adjusth,r.pt);
+this.HighLightPathEl.Edgev=new Edge(false,bElr,bEhd,r.pt);
 }
 else
-if(follow.charAt(0)=='I')
-
+if(eMode.charAt(0)=='I')
 {
-let adjusth=(window.prompt("Adjust Heading?", "Y/n").charAt(0)=='Y');
 let wa=this.Walls[this.HighLightWallPt];
 let pt=this.HighLightPathEl.pt;
 let r=this.getClosestPointOnLineSeg(pt,wa.start,wa.end);
-this.HighLightPathEl.Edgev=new Edge(true,false,adjusth,r.pt);
+this.HighLightPathEl.Edgev=new Edge(true,false,bEhd,r.pt);
 }
-if(follow.charAt(0)=='D')
+}
+
+EdgeDelete()
 {
+let modal = document.getElementById('EdgeDialog');
+ modal.style.display = "none";
 this.HighLightPathEl.Edgev=null;
 }
 
+CornerDialog()
+{
+let modal = document.getElementById('CornerDialog');
+ modal.style.display = "block";
+}
+
+CornerSubmit(ok)
+{
+let modal = document.getElementById('CornerDialog');
+ modal.style.display = "none";
+ if(!ok) return;
+let bClr= this.GetCheckedById('CornerLeftRight'); 
+let bCfa= this.GetCheckedById('CornerForeAft'); 
+
+let c=this.corners[this.HighLightCornerPt];
+let cpt={'x':c.x,'y':c.y};
+let pm1=null;
+let p1=this.HighLightPathEl;
+for(let i=1; i<this.Paths.length; i++)
+	 if(this.HighLightPathEl===this.Paths[i])
+	 {
+		 pm1=this.Paths[i-1];
+		 break;
+	 }
+let r=this.getClosestPointOnLineSeg(cpt,pm1.pt,p1.pt);
+p1.corner_d=new CornerDetect(bClr,bCfa,cpt,c.indent,r.pt);
+}
+
+CornerDelete()
+{
+let modal = document.getElementById('CornerDialog');
+ modal.style.display = "none";
+this.HighLightPathEl.corner_d=null;
 }
 
 }//end of carshow
@@ -1339,6 +1386,54 @@ function FeatureCancel(e)
 {
   TheOneCar.FeatureSubmit(false);
 }
+
+function EdgeSubmit()
+{
+TheOneCar.EdgeSubmit(true);
+}
+
+function EdgeCancel()
+{
+TheOneCar.EdgeSubmit(false);
+}
+
+function EdgeDelete()
+{
+TheOneCar.EdgeDelete();
+}
+
+function EdgeModeChange()
+{
+let c=document.getElementById('EdgeMode');
+let em=document.getElementById('EmpathVis'); 
+
+if(c.value.charAt(0)=='F')
+	{
+	 em.style.display='block';
+	}
+else
+	{
+	 em.style.display='none';
+	}
+}
+
+
+function CornerSubmit()
+{
+TheOneCar.CornerSubmit(true);
+}
+
+function CornerCancel()
+{
+TheOneCar.CornerSubmit(false);
+}
+
+function CornerDelete()
+{
+TheOneCar.CornerDelete();
+}
+
+
 
 
 

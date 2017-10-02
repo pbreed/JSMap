@@ -38,7 +38,7 @@
    cursor: pointer;
 }
 
-.modal {
+.featuremodal {
     display: none; /* Hidden by default */
     position: fixed; /* Stay in place */
     z-index: 1; /* Sit on top */
@@ -53,23 +53,107 @@
 }
 
 
-/* Modal Content */
-.modal-content {
+/* featuremodal Content */
+.featuremodal-content {
     background-color: #fefefe;
     margin: auto;
     padding: 20px;
     border: 1px solid #888;
     width: 80%;
+   }
+
+.edgemodal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
 }
+
+
+/* edgemodal Content */
+.edgemodal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+
+}
+.Cornermodal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    padding-top: 100px; /* Location of the box */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgb(0,0,0); /* Fallback color */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+
+/* Cornermodal Content */
+.Cornermodal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+
+}
+
 
 </style>
 </head>
 
 <body>
- <!-- Modal content -->
 
-<div id="myModal" class="modal">
-  <div class="modal-content">
+<!-- edgemodal content -->
+<div id="EdgeDialog" class="edgemodal">
+  <div class="edgemodal-content">
+	<FORM >
+     Mode: <select id='EdgeMode' select name="EdgeModeOpt" ONCHANGE="EdgeModeChange()">
+	  <option value="Follow">Follow</option>
+	  <option value="Intercept">Intercept</option>
+     </select><BR>
+      Set Left/Right:<input type="checkbox" id='EdgeLeftRight' name="SetLeftRight" value="SetLeftRight"><BR>
+     Set Heading   :<input type="checkbox" id='EdgeHead' name="SetEdgeHeading" value="SetEdgeHeading"><BR>
+     <span ID= 'EmpathVis'> Make Path Parallel:<input type="checkbox" id='EdgePar' name="SetEdgePar" value="SetEdgePar"></span>
+     <input type="button" value="Submit" ONCLICK="EdgeSubmit()">
+     <input type="button" value="Cancel" ONCLICK="EdgeCancel()">
+     <input type="button" value="Delete" ONCLICK="EdgeDelete()">
+	</FORM>
+  </div>
+</DIV>
+
+<!-- Cornermodal content -->
+<div id="CornerDialog" class="Cornermodal">
+  <div class="Cornermodal-content">
+	<FORM >
+     Set Left/Right:<input type="checkbox" id='CornerLeftRight' name="SetLeftRight" value="SetLeftRight"><BR>
+     Set Fore/Aft  :<input type="checkbox" id='CornerForeAft' name="SetCornerHeading" value="SetCornerHeading"><BR>
+     <input type="button" value="Submit" ONCLICK="CornerSubmit()">
+     <input type="button" value="Cancel" ONCLICK="CornerCancel()">
+     <input type="button" value="Delete" ONCLICK="CornerDelete()">
+	</FORM>
+  </div>
+</DIV>
+
+
+
+  <!-- featuremodal content -->
+
+<div id="FeatureDialog" class="featuremodal">
+  <div class="featuremodal-content">
 	<FORM >
 	 Speed:<input type="text" name="Speed:", value='10' ID='FeatueSpeed'> mph<br>
      Options: <select id='FeatureOptions' select name="Options">
@@ -85,6 +169,7 @@
 	</FORM>
   </div>
 </DIV>
+
 
 
     <!-- Button to invoke the click of the File Input -->
