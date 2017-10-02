@@ -1,13 +1,15 @@
 
 class carstate
 {
-	constructor(x,y,h,sl,rl)
+	constructor(x,y,h,sl,rl,ix,iy)
 	{
 	  this.x=x;
 	  this.y=y;
 	  this.h=h;
 	  this.slidar=sl;
 	  this.rlidar=rl;
+	  this.cix=ix;
+	  this.ciy=iy;
 	}
 };
 
@@ -92,7 +94,7 @@ class CornerDetect
 var TheOneCar;
 
 
-const ODOSCALE = 4.58*.93;
+const ODOSCALE = 4.58;
 
 const car_corner = [ [8,-6],[8,6],[-19,6],[-19,-6],[8,-6]];
 
@@ -103,6 +105,8 @@ constructor(data)
   this.lastOdo=null;
   this.carx=0;
   this.cary=0;
+  this.cars_idea_of_x=null;
+  this.cars_idea_of_y=null;;
   this.extent={};
   this.extent.minx=99999999999;
   this.extent.miny=9999999999;
@@ -157,6 +161,12 @@ scanone(v){
 	  this.expand_extent(5,5);
 	  break;
 
+  case 'CurPosObj':
+		  this.cars_idea_of_x=v.x;
+		  this.cars_idea_of_y=v.y;
+
+
+	  break;
   case 'IMUReportObj':
 	  {
 	 if(this.lastOdo==null)
@@ -175,7 +185,7 @@ scanone(v){
 		 {
 		   console.log('NAN??\n');
 		 }
-		 this.car_States.push(new carstate(this.carx,this.cary,v.head,v.lidar,this.LastLidar));
+		 this.car_States.push(new carstate(this.carx,this.cary,v.head,v.lidar,this.LastLidar,this.cars_idea_of_x,this.cars_idea_of_y));
 		 this.LastLidar=[];
 		 this.expand_extent(this.carx,this.cary);
 		 this.lastOdo=v.Odo;
@@ -420,6 +430,16 @@ drawState(ctx,pos,xo,yo)
 {
 this.drawLidar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].rlidar,this.car_States[pos].slidar);
 this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].slidar);
+if(this.car_States[pos].cix!=null)
+{
+ 	ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+    ctx.beginPath();
+	ctx.arc(this.car_States[pos].cix+xo,-this.car_States[pos].ciy+yo,2,0,2*Math.PI);
+	ctx.stroke();
+ 	ctx.strokeStyle= 'rgba(0,0,0,1.0)';
+
+}
+
 
 if(this.corners.length>0)
   {
@@ -1236,7 +1256,8 @@ if(!this.HighLightPathEl)
 let bContinue= this.GetCheckedById('FeatureContinue');
 let bStop= this.GetCheckedById('FeatureStop');
 let fOptions=this.GetTextContentById('FeatureOptions');
-let fSpeed=this.GetTextContentById('FeatueSpeed');
+let fSpeed=Number(this.GetTextContentById('FeatueSpeed'));
+
 let pe=this.HighLightPathEl;
 
 if((loc!=null) && (bContinue))
@@ -1481,6 +1502,31 @@ TheOneCar.CornerDelete();
 }
 
 
+function PostToCar()
+{
+let car_addr="192.168.0.155"
+car_addr=window.prompt("Car Address",car_addr);
+var obj={'Path':TheOneCar.Paths};
+xhr = new XMLHttpRequest();
+var url ='http:\\\\'+car_addr+'\\PATHPOST';
+console.log('Posting to '+url+'\n');
+
+xhr.open("POST",url, true);
+xhr.setRequestHeader("Content-type", "application/json");
+
+xhr.onreadystatechange = function () 
+{ 
+    if (xhr.readyState == 4 && xhr.status == 200) 
+	{
+		console.log("Sent post succesfully\r\n");
+    }
+   else
+    {
+	   console.log("Post Failed\r\n");
+    }
+}
+xhr.send(JSON.stringify(obj));
+}
 
 
 
