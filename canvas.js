@@ -304,12 +304,6 @@ function  Pause()
 bRun=false;
 }
 
-function Jump()
-{
-state_pos+=100;
-if(state_pos>=data_display.getMaxState()) state_pos=0;
-
-}
 
 function Step()
 {

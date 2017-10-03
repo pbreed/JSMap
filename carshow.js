@@ -1,7 +1,6 @@
-
 class carstate
 {
-	constructor(x,y,h,sl,rl,ix,iy)
+	constructor(x,y,h,sl,rl,ix,iy,slope,b)
 	{
 	  this.x=x;
 	  this.y=y;
@@ -10,6 +9,8 @@ class carstate
 	  this.rlidar=rl;
 	  this.cix=ix;
 	  this.ciy=iy;
+	  this.sl=slope;
+	  this.b=b;
 	}
 };
 
@@ -106,7 +107,9 @@ constructor(data)
   this.carx=0;
   this.cary=0;
   this.cars_idea_of_x=null;
-  this.cars_idea_of_y=null;;
+  this.cars_idea_of_y=null;
+  this.cars_idea_off_x=null;
+  this.cars_idea_off_y=null;
   this.extent={};
   this.extent.minx=99999999999;
   this.extent.miny=9999999999;
@@ -162,8 +165,23 @@ scanone(v){
 	  break;
 
   case 'CurPosObj':
-		  this.cars_idea_of_x=v.x;
-		  this.cars_idea_of_y=v.y;
+		  if(this.cars_idea_off_x==null)
+		  {
+		   this.cars_idea_off_x=(this.carx-v.x);
+		   this.cars_idea_off_y=(this.cary-v.y);
+		  }
+		  this.cars_idea_of_x=v.x+this.cars_idea_off_x;
+		  this.cars_idea_of_y=v.y+this.cars_idea_off_y;
+		  if(v.sn>0)
+		  {
+			this.car_slope=(v.sn-128)/128;
+			if (typeof v.b === "undefined") 
+				{
+				this.car_b=0; 
+				}
+			else
+				this.car_b=v.b;
+		  }
 
 
 	  break;
@@ -180,12 +198,14 @@ scanone(v){
 		 let dy=dist*Math.cos(v.head*Math.PI/180.0);
 		 this.carx+=dx;
 		 this.cary+=dy;
+		 
 		
 		 if((this.carx==NaN) || (this.cary==NaN))
 		 {
 		   console.log('NAN??\n');
 		 }
-		 this.car_States.push(new carstate(this.carx,this.cary,v.head,v.lidar,this.LastLidar,this.cars_idea_of_x,this.cars_idea_of_y));
+		 this.car_States.push(new carstate(this.carx,this.cary,v.head,v.lidar,this.LastLidar,this.cars_idea_of_x,this.cars_idea_of_y,this.car_slope,this.car_b));
+		 this.car_slope=null;
 		 this.LastLidar=[];
 		 this.expand_extent(this.carx,this.cary);
 		 this.lastOdo=v.Odo;
@@ -439,6 +459,34 @@ if(this.car_States[pos].cix!=null)
  	ctx.strokeStyle= 'rgba(0,0,0,1.0)';
 
 }
+
+if((this.car_States[pos].sl!=null) && (this.car_States[pos].sl!=undefined))
+{//We hav a slope!
+
+ let xc=this.car_States[pos].x+xo;
+ let yc=(-this.car_States[pos].y)+yo;
+ let x1=this.car_States[pos].b;
+ let y1=0;
+ let y2=300;
+ let x2=(this.car_States[pos].sl*300)+x1;
+ //Now rotate by heading...
+ let h=this.car_States[pos].h;
+ //h-=90;
+ let s=Math.sin(-h*Math.PI/180.0);
+ let c=Math.cos(-h*Math.PI/180.0);
+ let x1c=(c*x1)+(-s*y1)+xc;
+ let y1c=(-((c*y1)+(s*x1)))+yc;
+ let x2c=(c*x2)+(-s*y2)+xc;
+ let y2c=(-((c*y2)+(s*x2)))+yc;
+ ctx.beginPath();
+ ctx.moveTo(x1c,y1c);
+ ctx.lineTo(x2c,y2c);
+ ctx.stroke();
+
+}
+									  
+
+
 
 
 if(this.corners.length>0)
