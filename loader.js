@@ -441,7 +441,7 @@ function ReadFile()
 		clearInterval(mto);
 		RunButtonsVis(true);
 
-		var car_show=new carshow(par.AccumlatedData);
+		var car_show=new carshow(par.AccumlatedData,par.AccumlatedThings);
 		adddata(car_show);
 
 	}

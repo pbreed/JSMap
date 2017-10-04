@@ -1,6 +1,6 @@
 class carstate
 {
-	constructor(x,y,h,sl,rl,ix,iy,slope,b)
+	constructor(x,y,h,sl,rl,ix,iy,slope,b,cpn,th)
 	{
 	  this.x=x;
 	  this.y=y;
@@ -11,6 +11,8 @@ class carstate
 	  this.ciy=iy;
 	  this.sl=slope;
 	  this.b=b;
+	  this.cpn=cpn;
+	  this.th=th;
 	}
 };
 
@@ -42,10 +44,10 @@ class Path
  this.pt=ep;
  this.Edgev=null;
  this.corner_d=null;
- this.next_seq=null;          
- this.bStop=false;;      
+ this.next_seq=null;
+ this.bStop=false;;
  this.Options=null;
- this.Speed=null;     
+ this.Speed=null;
 
 
 
@@ -101,7 +103,7 @@ const car_corner = [ [8,-6],[8,6],[-19,6],[-19,-6],[8,-6]];
 
 class carshow
 {
-constructor(data)
+constructor(data,things)
   {
   this.lastOdo=null;
   this.carx=0;
@@ -127,8 +129,19 @@ constructor(data)
   this.HighLightPathEl=null;
   this.HighLightWallPt=null;
   this.HighLightCornerPt=null;
-  this.Waiting_ForContinueClick=false; 
+  this.Waiting_ForContinueClick=false;
+  this.DontUseMag=false;
   TheOneCar=this;
+  for(var i=0; i<things.length; i++)
+  {
+	if(things[i].message!=undefined)
+	{
+	 if(things[i].message.indexOf('"UseMag":false')>0)
+	 {
+		 this.DontUseMag=true;
+	 }
+	}
+  }
 
   for(var i=0; i<data.length; i++)
 	{
@@ -164,6 +177,17 @@ scanone(v){
 	  this.expand_extent(5,5);
 	  break;
 
+  case 'NextPointRec':
+	  {
+
+	   this.cars_current_point_number=v.cp;
+	  }
+	  break;
+
+  case 'SteerLoopObj':
+	   this.cars_target_head=v.targ;
+	  break;
+
   case 'CurPosObj':
 		  if(this.cars_idea_off_x==null)
 		  {
@@ -175,9 +199,9 @@ scanone(v){
 		  if(v.sn>0)
 		  {
 			this.car_slope=(v.sn-128)/128;
-			if (typeof v.b === "undefined") 
+			if (typeof v.b === "undefined")
 				{
-				this.car_b=0; 
+				this.car_b=0;
 				}
 			else
 				this.car_b=v.b;
@@ -185,6 +209,12 @@ scanone(v){
 
 
 	  break;
+  case 'PathOrigin':
+       this.PathOrg_x=v.x;
+	   this.PathOrg_y=v.y;
+      break;
+
+
   case 'IMUReportObj':
 	  {
 	 if(this.lastOdo==null)
@@ -193,18 +223,22 @@ scanone(v){
 		}
 	 if(this.lastOdo!=v.Odo)
 	  {
+		 let use_head=v.head;
+		 if (this.DontUseMag)
+			  use_head=v.rhead;
+
 		 let dist=(v.Odo-this.lastOdo)*ODOSCALE;
-		 let dx=dist*Math.sin(v.head*Math.PI/180.0);
-		 let dy=dist*Math.cos(v.head*Math.PI/180.0);
+		 let dx=dist*Math.sin(use_head*Math.PI/180.0);
+		 let dy=dist*Math.cos(use_head*Math.PI/180.0);
 		 this.carx+=dx;
 		 this.cary+=dy;
-		 
+		
 		
 		 if((this.carx==NaN) || (this.cary==NaN))
 		 {
 		   console.log('NAN??\n');
 		 }
-		 this.car_States.push(new carstate(this.carx,this.cary,v.head,v.lidar,this.LastLidar,this.cars_idea_of_x,this.cars_idea_of_y,this.car_slope,this.car_b));
+		 this.car_States.push(new carstate(this.carx,this.cary,use_head,v.lidar,this.LastLidar,this.cars_idea_of_x,this.cars_idea_of_y,this.car_slope,this.car_b,this.cars_current_point_number,this.cars_target_head));
 		 this.car_slope=null;
 		 this.LastLidar=[];
 		 this.expand_extent(this.carx,this.cary);
@@ -259,6 +293,8 @@ getMaxState()
 
 drawBase(ctx,xo,yo)
 {
+	this.saved_xo=xo;
+	this.saved_yo=yo;
 	let arrayLength = this.car_States.length;
 	ctx.beginPath();
 	ctx.moveTo(this.car_States[0].x+xo,-this.car_States[0].y+yo);
@@ -456,8 +492,29 @@ if(this.car_States[pos].cix!=null)
     ctx.beginPath();
 	ctx.arc(this.car_States[pos].cix+xo,-this.car_States[pos].ciy+yo,2,0,2*Math.PI);
 	ctx.stroke();
+    if(this.car_States[pos].th!=null)
+	{
+		let h=this.car_States[pos].th;
+		let xc=this.car_States[pos].x+xo;
+		let yc=(-this.car_States[pos].y)+yo;
+		let s=Math.sin(-h*Math.PI/180.0);
+		let c=Math.cos(-h*Math.PI/180.0);
+		ctx.beginPath();
+		ctx.moveTo(xc,yc);
+		let y1=200;
+		let x1=0;
+		ctx.lineTo((c*x1)+(-s*y1)+xc,(-((c*y1)+(s*x1)))+yc);
+		ctx.stroke();
+	}
  	ctx.strokeStyle= 'rgba(0,0,0,1.0)';
 
+}
+
+
+
+if(this.car_States[pos].cpn!=null)
+{	if(this.Paths.length>this.car_States[pos].cpn)
+	this.HighLightPathEl=this.Paths[this.car_States[pos].cpn];
 }
 
 if((this.car_States[pos].sl!=null) && (this.car_States[pos].sl!=undefined))
@@ -484,7 +541,7 @@ if((this.car_States[pos].sl!=null) && (this.car_States[pos].sl!=undefined))
  ctx.stroke();
 
 }
-									  
+									
 
 
 
@@ -580,7 +637,7 @@ if(this.corners.length>0)
 	   ctx.stroke();
 	   }
   }
- 
+
 
   ctx.restore();
 
@@ -734,7 +791,7 @@ if(this.corners.length>0)
 		  ctx.textBaseline = 'top';
 		  ctx.beginPath();
 		  ctx.strokeText("CLICK on next Path point",10,10);
-	 
+	
 	  }
 
 
@@ -914,11 +971,11 @@ mouseup(e,adjusted_loc,t)
 	break;
 	case 'F':
 		{
-   	     
+   	
 			if(this.Waiting_ForContinueClick)
 				{
 				this.Waiting_ForContinueClick=false;
-				this.FinishFeature(this.down_p); 
+				this.FinishFeature(this.down_p);
 				}
 			else
 			{
@@ -1236,7 +1293,7 @@ NewMenuSelect(t)
 	this.HighLightPathEl=null;
 	this.HighLightWallPt=null;
 	this.HighLightCornerPt=null;
-	this.Waiting_ForContinueClick=false; 
+	this.Waiting_ForContinueClick=false;
 
 }
 
@@ -1297,10 +1354,10 @@ FinishFeature(loc)
 {
 if(!this.HighLightPathEl)
 {
-    this.Waiting_ForContinueClick=false; 
+    this.Waiting_ForContinueClick=false;
 	return;
 }
-   
+
 let bContinue= this.GetCheckedById('FeatureContinue');
 let bStop= this.GetCheckedById('FeatureStop');
 let fOptions=this.GetTextContentById('FeatureOptions');
@@ -1354,15 +1411,15 @@ if(ok)
 {
 let bContinue= this.GetCheckedById('FeatureContinue');
 
-if(bContinue) 
+if(bContinue)
 	this.Waiting_ForContinueClick=true;
 else
-    this.Waiting_ForContinueClick=false;                                                                                                                                                                                           
+    this.Waiting_ForContinueClick=false;
 this.FinishFeature(null);
 }
 else
 {
-this.Waiting_ForContinueClick=false;                                                                                                                                                                                           
+this.Waiting_ForContinueClick=false;
 }
 }
 
@@ -1380,10 +1437,10 @@ let modal = document.getElementById('EdgeDialog');
  modal.style.display = "none";
  if(!ok) return;
 
-let bElr= this.GetCheckedById('EdgeLeftRight'); 
-let bEhd= this.GetCheckedById('EdgeHead'); 
-let bPar= this.GetCheckedById('EdgePar'); 
-let eMode=this.GetTextContentById('EdgeMode'); 
+let bElr= this.GetCheckedById('EdgeLeftRight');
+let bEhd= this.GetCheckedById('EdgeHead');
+let bPar= this.GetCheckedById('EdgePar');
+let eMode=this.GetTextContentById('EdgeMode');
 
 let wa=this.Walls[this.HighLightWallPt];
 let pm1=null;
@@ -1412,7 +1469,7 @@ p1.pt.y=pm1.pt.y+dy;
 let p={'x':(p1.pt.x+pm1.pt.x)/2,'y':(p1.pt.y+pm1.pt.y)/2};
 let r=this.getClosestPointOnLineSeg(p,wa.start,wa.end);
 
-if((bEhd) && (bPar)) 
+if((bEhd) && (bPar))
    {
 	this.HighLightPathEl.Edgev=new Edge(false,bElr,0,r.pt);
    }
@@ -1449,8 +1506,8 @@ CornerSubmit(ok)
 let modal = document.getElementById('CornerDialog');
  modal.style.display = "none";
  if(!ok) return;
-let bClr= this.GetCheckedById('CornerLeftRight'); 
-let bCfa= this.GetCheckedById('CornerForeAft'); 
+let bClr= this.GetCheckedById('CornerLeftRight');
+let bCfa= this.GetCheckedById('CornerForeAft');
 
 let c=this.corners[this.HighLightCornerPt];
 let cpt={'x':c.x,'y':c.y};
@@ -1521,7 +1578,7 @@ TheOneCar.EdgeDelete();
 function EdgeModeChange()
 {
 let c=document.getElementById('EdgeMode');
-let em=document.getElementById('EmpathVis'); 
+let em=document.getElementById('EmpathVis');
 
 if(c.value.charAt(0)=='F')
 	{
@@ -1562,9 +1619,9 @@ console.log('Posting to '+url+'\n');
 xhr.open("POST",url, true);
 xhr.setRequestHeader("Content-type", "application/json");
 
-xhr.onreadystatechange = function () 
-{ 
-    if (xhr.readyState == 4 && xhr.status == 200) 
+xhr.onreadystatechange = function ()
+{
+    if (xhr.readyState == 4 && xhr.status == 200)
 	{
 		console.log("Sent post succesfully\r\n");
     }
@@ -1585,6 +1642,24 @@ function ReadPathsFile() {
   fr.onload = function()
   {
 	  var jobj=JSON.parse(fr.result);
+
+	  if(TheOneCar.PathOrg_x!=undefined)
+	  {
+		let fx=jobj.Path[0].pt.x
+		let fy=jobj.Path[0].pt.y;
+		//fx==this.PathOrg_x==this.saved_xo;
+		//fy==this.PathOrg_x==this.saved_yo;
+
+	   for(let i=0; i< jobj.Path.length; i++)
+	      {					 /* now to car coordinates*/
+		   jobj.Path[i].pt.x+= (-fx)+TheOneCar.saved_xo;
+		   jobj.Path[i].pt.y+= (-fy)+TheOneCar.saved_yo;
+	      }
+
+	  }
+
+
+
 	  TheOneCar.Paths=jobj.Path;
 
 	  TheOneCar.Measurements=[];
