@@ -440,6 +440,10 @@ function ReadFile()
 		
 		clearInterval(mto);
 		RunButtonsVis(true);
+		var flbut= document.getElementById('VisFileButton');
+	    flbut.style.visibility = 'hidden';
+
+
 
 		var car_show=new carshow(par.AccumlatedData,par.AccumlatedThings);
 		adddata(car_show);

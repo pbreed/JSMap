@@ -21,7 +21,6 @@
 	const GRID_HORIZONTAL_SPACING = 10;
 	const GRID_VERTICAL_SPACING = 10;
 	const GRID_LINE_COLOR = 'rgb(0, 0, 200)';
-	const ZOOM_MIN_LIMIT= 0.25;
 
 	class ScalingObject
 	{
@@ -39,6 +38,18 @@
 	 this.MouseDownInDraw={'x':0,'y':0};
 	 this.MouseDownOrgCenter=this.DrCenter;
 	 this.MouseDownOrgOffset=this.OffsetIntoDraw;
+	 this.OffsetCenter={'x':0, 'y':0};
+	
+	 if((this.Draw_wd/this.Display_wd)> (this.Draw_ht/this.Display_ht))
+	 {
+	  this.ZoomMin=(this.Display_wd/this.Draw_wd);
+	 }
+	 else
+	 {
+     this.ZoomMin=(this.Display_ht/this.Draw_ht);
+     }
+	 if (this.ZoomMin>1) { this.ZoomMin=1.0; }
+
 	 }
 	
 
@@ -65,6 +76,26 @@
 	  return loc;
      }
 	
+	 Center()
+	 {
+		 if(data_display==undefined) return;
+	   //Recenter every thing...
+		 let loc={'x':this.Draw_wd/2,'y':this.Draw_ht/2};
+
+		 loc=data_display.GetCenterOfInterest(state_pos,ZoomObj.OffsetCenter.x,ZoomObj.OffsetCenter.y);
+
+		 this.DRCenter=loc;
+		 
+		 loc.x-=this.Display_wd/(2*this.OffsetIntoDraw.zm);
+		 loc.y-=this.Display_ht/(2*this.OffsetIntoDraw.zm);
+
+		 this.OffsetIntoDraw.x=Math.round(loc.x);
+		 this.OffsetIntoDraw.y=Math.round(loc.y);
+
+
+	 }
+
+
 	 Zoom(delta,x,y)
 	 {
 	   let loc = windowToCanvas(this.DispCan, x, y);
@@ -72,11 +103,11 @@
 	   this.DRCenter=loc;
 
 	   if(delta>0) this.OffsetIntoDraw.zm*=2;
-	   if(delta<0) this.OffsetIntoDraw.zm/=2;
+	   if((delta<0) && (this.OffsetIntoDraw.zm >this.ZoomMin)) this.OffsetIntoDraw.zm/=2
 
-	   if(this.OffsetIntoDraw.zm<ZOOM_MIN_LIMIT)
+
+	   if(this.OffsetIntoDraw.zm<=this.ZoomMin)
 		   {
-		    this.OffsetIntoDraw.zm=ZOOM_MIN_LIMIT;
 			this.DRCenter.x=this.Draw_wd/2;
 			this.DRCenter.y=this.Draw_ht/2;
 			loc=this.DRCenter;
@@ -129,7 +160,6 @@
 	};
 
 
-	var OffsetCenter={'x':0, 'y':0};
 	
 	function startcanvas(){	
 		canvas = document.getElementById('drawing-canvas');
@@ -216,15 +246,21 @@ function adddata(data_show)
 	let can_cty=(os_canvas.height)/2;
 	let can_ctx=(os_canvas.width)/2;
 
+	ZoomObj=new ScalingObject(canvas,os_canvas);
 	//can_ctx==(off.x+car_ctx)
-	OffsetCenter.x=(can_ctx-car_ctx);
-	OffsetCenter.y=(can_cty+car_cty); //Car ys are neg
+	
+	//We set the cars center of the world to be 
+	//The middle of its extens vs the middle of the offscreen canvas...
+	//All car drawing goes into off screen canvas;
+
+	ZoomObj.OffsetCenter.x=(can_ctx-car_ctx);
+	ZoomObj.OffsetCenter.y=(can_cty+car_cty); //Car ys are neg
 
 	let bgctx= os_bgcanvas.getContext('2d');
 
 	bgctx.clearRect(0,0,bgctx.canvas.width,bgctx.canvas.height);
 	drawGrid(bgctx,GRID_LINE_COLOR , 12, 12);
-	data_show.drawBase(bgctx,OffsetCenter.x,OffsetCenter.y);
+	data_show.drawBase(bgctx,ZoomObj.OffsetCenter.x,ZoomObj.OffsetCenter.y);
 
 
 	bgctx.beginPath();
@@ -234,12 +270,12 @@ function adddata(data_show)
 
 
 
-	ZoomObj=new ScalingObject(canvas,os_canvas);
 	canvas.onmousedown = CanvasMouseDown;
 	canvas.onmousemove = CanvasMouseMove;
 	canvas.onmouseup   = CanvasMouseUp;
 	canvas.onmouseleave= CanvasMouseLeave;
 	canvas.onmouseenter= CanvasMouseEnter;
+	window.onkeypress  = CanvasKeyPress;
 
 
 
@@ -251,10 +287,16 @@ function basedraw(ctx)
 if(data_display==undefined) return;
 let osctx = os_canvas.getContext('2d');
 
+if(bRun)
+	{let c=document.getElementById('LockCenter');
+     if(c.checked) ZoomObj.Center();
+	}
+
+
 osctx.clearRect(0,0,osctx.canvas.width,osctx.canvas.height);
 osctx.drawImage(os_bgcanvas,0,0);
 
-data_display.drawState(osctx,state_pos,OffsetCenter.x,OffsetCenter.y);
+data_display.drawState(osctx,state_pos,ZoomObj.OffsetCenter.x,ZoomObj.OffsetCenter.y);
 
 /*
 let wscale=os_canvas.width/canvas.width;
@@ -291,6 +333,8 @@ lab.value=state_pos.toString();
  function Rewind()
 {
 state_pos=0;
+let c=document.getElementById('LockCenter');
+if(c.checked) ZoomObj.Center();
 }
 
 function Run()
@@ -307,15 +351,18 @@ bRun=false;
 
 function Step()
 {
+let c=document.getElementById('LockCenter');
 state_pos+=1;
 if(state_pos>=data_display.getMaxState()) state_pos=0;
-
+if(c.checked) ZoomObj.Center();
 }
 
 function BStep()
 {
 state_pos-=1;
 if(state_pos==0) state_pos=data_display.getMaxState()-1;
+let c=document.getElementById('LockCenter');
+if(c.checked) ZoomObj.Center();
 }
 
 
@@ -497,6 +544,54 @@ function CanvasMouseEnter(e)
 	pMouseLeft=null;
 }
 
+
+function CanvasKeyPress(e)
+{
+switch (e.key)
+{
+case ']':
+case '+':
+	ZoomObj.OffsetIntoDraw.zm*=2;
+break;
+
+case '[':
+case '-':
+	ZoomObj.OffsetIntoDraw.zm/=2;
+break;
+
+case 'C':
+case 'c':
+	ZoomObj.Center();
+	break;
+
+case 'R':
+case 'r':
+	Run();
+break;
+case 'P':
+case 'p':
+	Pause();
+break;
+
+case 'S':
+case 's':
+	Step();
+break;
+
+case 'B':
+case 'b':
+	BStep();
+break;
+
+
+
+default: 
+	return;
+}
+
+e.preventDefault();
+
+}
 
 
 

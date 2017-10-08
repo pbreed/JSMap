@@ -481,6 +481,11 @@ ctx.restore();
 
 
 
+GetCenterOfInterest(pos,xo,yo)
+{
+let loc={'x':this.car_States[pos].x+xo,'y':-this.car_States[pos].y+yo};
+return loc;
+}
 
 drawState(ctx,pos,xo,yo)
 {

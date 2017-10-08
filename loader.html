@@ -176,7 +176,7 @@
     <span >
 	<input id='hidden_file' type="file" onchange="ReadFile()" style="display:none;"/>
 	<input id='hidden_json_file' type="file" onchange="ReadPathsFile()" style="display:none;"/>
-	<input type="button" onclick="HandleFileButtonClick();" value="Data Load" style="background: red;">
+	<input type="button" id='VisFileButton' onclick="HandleFileButtonClick();" value="Data Load" style="background: red;">
 	<input type="button" onclick="HandleJsonButtonClick();" value="Paths/Walls" style="background: red;">
 	</span>
 	<span class='RunButtons' >
@@ -185,7 +185,9 @@
 	<INPUT TYPE="BUTTON" VALUE="Pause" ONCLICK="Pause()" />
 	<INPUT TYPE="BUTTON" VALUE="BStep" ONCLICK="BStep()" />
 	<INPUT TYPE="BUTTON" VALUE="Step" ONCLICK="Step()" />
-	<INPUT TYPE="BUTTON" VALUE="Post To Car" ONCLICK="PostToCar()"/>
+<!--	<INPUT TYPE="BUTTON" VALUE="Post To Car" ONCLICK="PostToCar()"/> -->
+     LockDisplay<input type="checkbox" id='LockCenter' name="LockCenter">
+
 	<a download id='DataSet'>download</a>
     <textarea cols="40" rows="1" id="labme" ></textarea>
 	</span>
