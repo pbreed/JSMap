@@ -393,15 +393,17 @@ function drawGrid(context, color, stepx, stepy) {
 }
 
   const ICON_RECTANGLES = [
-      { x: 13.5, y: 13.5, w: 48, h: 48  , t:'P','ft':'Path', 'cur':'crosshair'},
-      { x: 13.5, y: 71.5, w: 48, h: 48  , t:'W','ft':'Wall','cur':'crosshair'},
+      { x: 13.5, y: 13.5,  w: 48, h: 48  , t:'P','ft':'Path', 'cur':'crosshair'},
+      { x: 13.5, y: 71.5,  w: 48, h: 48  , t:'W','ft':'Wall','cur':'crosshair'},
       { x: 13.5, y: 129.5, w: 48, h: 48 , t:'F','ft':'Feature','cur':'default'},
       { x: 13.5, y: 187.5, w: 48, h: 48 , t:'M','ft':'Meas','cur':'crosshair'},
       { x: 13.5, y: 245.5, w: 48, h: 48 , t:'X','ft':'Delete','cur':'pointer'},
       { x: 13.5, y: 303.5, w: 48, h: 48 , t:'D','ft':'Drag','cur':'move'},
       { x: 13.5, y: 361.5, w: 48, h: 48 , t:'S','ft':'Split','cur':'row-resize'},
       { x: 13.5, y: 419.5, w: 48, h: 48 , t:'E','ft':'Edge','cur':'default'},
-      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'C','ft':'Corner','cur':'default'}
+      { x: 13.5, y: 477.5, w: 48, h: 48 , t:'C','ft':'Corner','cur':'default'},
+      { x: 13.5, y: 535.5, w: 48, h: 48 , t:'A','ft':'Arc','cur':'default'}
+
    ];
 
 

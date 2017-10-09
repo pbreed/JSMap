@@ -240,7 +240,7 @@ class CornerDetect
 const ODOSCALE = 4.58;
 
 const TrackColor   = 'rgba(0,255,0,1.0)';
-const WallColor    = 'rgba(0,255,0,1.0)';
+const WallColor    = 'rgba(0,0,0,1.0)';
 const RLidarColor  = 'rgba(0,0,255,0.5)';
 const MySlopeColor = 'rgba(255,0,255,1.0)'; 
 const CarBodyColor = 'rgba(255,0,0,1.0)'; 
@@ -742,6 +742,8 @@ if(this.corners.length>0)
 		break;
 	case 'D': //Drag
         break;
+	case 'A':
+		break;
 	}
   }
 
@@ -789,7 +791,7 @@ if(this.corners.length>0)
   {  let m=this.Walls[i];
        if(this.HighLightWallPt==i)
 	   {
-	    ctx.strokeStyle=SelectColor;
+	   ctx.strokeStyle=SelectColor;
 	   ctx.beginPath();
 	   ctx.arc(m.start.x,m.start.y,3,0,2*Math.PI);
 	   ctx.lineTo(m.end.x,m.end.y);
@@ -890,7 +892,7 @@ if(this.corners.length>0)
 
 	   if(m.Edgev!=null)
 	   {
-		   ctx.strokeStyle= EdgeColo;
+		   ctx.strokeStyle= EdgeColor;
 		   ctx.beginPath();
 		   let p1=m.pt;
 
@@ -1107,6 +1109,8 @@ case 'C':
 	   }
 	}
 break;
+case 'A':
+	break;
 }
 
 
@@ -1131,6 +1135,31 @@ mouseup(e,adjusted_loc,t)
 {
 	switch(this.MouseDown)
 	{
+	case 'A': //Arc Tool
+		 {
+
+			if(this.Paths.length<1) return;
+		  let bp=1;
+		  let dp=distance_pt(adjusted_loc,this.Paths[1].pt);
+
+		  for (let i=2; i<this.Paths.length; i++) 
+		  {
+			  let dn=distance_pt(adjusted_loc,this.Paths[i].pt);
+			  if(dn<dp) 
+				  {
+				  dp=dn; 
+				  bp=i;
+				 }
+
+		  }
+		  if(this.Paths[bp].Arc) this.Paths[bp].Arc=false;
+		  else
+			  this.Paths[bp].Arc=true;
+		 this.RecalculateAllPaths();                                                                                                                                                                                                           
+		 }
+
+		break;
+
 	case 'M': //measure
 		 this.Measurements.push(new Measurement(this.down_p,adjusted_loc));
 	break;
@@ -1589,6 +1618,8 @@ return t;
 FeatureDialog()
 {
 let modal = document.getElementById('FeatureDialog');
+
+
  modal.style.display = "block";
 }
 
@@ -1720,6 +1751,7 @@ let dx=(r2.pt.x-r1.pt.x);
 let dy=(r2.pt.y-r1.pt.y);
 p1.pt.x=pm1.pt.x+dx;
 p1.pt.y=pm1.pt.y+dy;
+this.RecalculateAllPaths();
 }
 
 let p={'x':(p1.pt.x+pm1.pt.x)/2,'y':(p1.pt.y+pm1.pt.y)/2};
@@ -1929,6 +1961,8 @@ function ReadPathsFile() {
  	   TheOneCar.Paths[index].bStop=item.bStop;
  	   TheOneCar.Paths[index].Options=item.Options;
  	   TheOneCar.Paths[index].Speed=item.Speed;
+	   TheOneCar.Paths[index].Arc=item.Arc;
+
 	  });
 
  TheOneCar.RecalculateAllPaths();      
