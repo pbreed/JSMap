@@ -155,13 +155,14 @@
 <div id="FeatureDialog" class="featuremodal">
   <div class="featuremodal-content">
 	<FORM >
-	 Speed:<input type="text" name="Speed:", value='10' ID='FeatueSpeed'> mph<br>
+	 Speed:<input type="text" name="Speed:", value='' ID='FeatureSpeed'> mph<br>
      Options: <select id='FeatureOptions' select name="Options">
 	  <option value="none">none</option>
 	  <option value="ped">Pedestrian</option>
 	  <option value="bar">Barrels</option>
 	  <option value="ramp">Ramp</option>
      </select><BR>
+     Make Arc:<input type="checkbox" id='ArcConvert' name="ArcConvert" value="ArcCon"><BR>
      Stop at end:<input type="checkbox" id='FeatureStop' name="Stop when done" value="stopatend"><BR>
 	 Continue to Segment <input type="checkbox" id="FeatureContinue" name="continue" value="continue">(Select segment next)<BR> 
      <input type="button" value="Submit" ONCLICK="FeatureSubmit()">

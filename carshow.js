@@ -1,3 +1,6 @@
+
+var TheOneCar;
+
 class carstate
 {
 	constructor(x,y,h,sl,rl,ix,iy,slope,b,cpn,th)
@@ -29,11 +32,15 @@ class Measurement
  {
  this.start=sp;
  this.end=ep;
- this.value=distance_pt(sp,ep).toFixed(2);
+ this.recalculate();
  }
  recalculate()
  {
-  this.value=distance_pt(this.start,this.end).toFixed(2);
+  this.dist=distance_pt(this.start,this.end);
+  if(this.dist>4) 
+	this.value=this.dist.toFixed(2);
+  else
+	this.value='('+this.start.x.toFixed(2)+','+this.start.y.toFixed(2)+')';
  }
 }
 
@@ -48,14 +55,68 @@ class Path
  this.bStop=false;;
  this.Options=null;
  this.Speed=null;
-
-
-
-
-
-
-
+ this.Arc=false;
+ this.head=null;
  }
+
+ recalculate()
+ {
+  for(let i=0; i<TheOneCar.Paths.length; i++)
+  {
+	if(TheOneCar.Paths[i]===this) 
+	{
+    if(i==0) return;
+	let prev_pt=TheOneCar.Paths[i-1].pt;
+	let pt=this.pt;
+	let head=Calc_HeadDeg(prev_pt,pt);
+	//So we are going from prev_pt to pt.
+	this.head=head;
+	if(this.Arc)
+	{
+
+		if((i+1)==TheOneCar.Paths.length) return;
+        let EndHead=Calc_HeadDeg(pt,TheOneCar.Paths[i+1].pt); 
+		if(i < 2 ) return;
+		let pprev_pt=TheOneCar.Paths[i-2].pt;
+		let StartHead=Calc_HeadDeg(pprev_pt,prev_pt);  
+		let ChordAngle=(EndHead-StartHead);
+		if(ChordAngle>=360) ChordAngle-=360;
+		if(ChordAngle<=(-360)) ChordAngle+=360;
+
+		if(Math.abs(ChordAngle)<5) return;
+	    //Calc unit chord
+		
+		let x2=Math.cos(ChordAngle*Math.PI/180.0);
+		let y2=Math.sin(ChordAngle*Math.PI/180.0);
+		let unit_c_dist=Math.sqrt((x2-1)*(x2-1)+(y2*y2)); //Y0 =0;
+		let d=distance_pt(prev_pt,pt);
+		let Arc_R=d/unit_c_dist;
+		//Now solve for center...
+
+
+		let a=(d*d)/(2*d);
+
+		let hsq=(Arc_R*Arc_R)-(a*a);
+
+		let h=Math.sqrt(hsq);
+		x2=(prev_pt.x+pt.x)/2;
+		y2=(prev_pt.y+pt.y)/2;
+
+		let center_x=x2+h*(pt.y-prev_pt.y)/d;
+		let center_y=y2-h*(pt.x-prev_pt.x)/d;
+		
+		
+		this.ChordAngle=ChordAngle;
+		this.arc_r=Arc_R;
+		this.center_arc={'x':center_x, 'y':center_y};
+
+	}//We were an arc
+
+	 return;
+	}//Found point
+
+  }//Searching
+ }//recalc
 }
 
 class Wall
@@ -94,10 +155,27 @@ class CornerDetect
 
 
 
-var TheOneCar;
 
 
 const ODOSCALE = 4.58;
+
+const TrackColor   = 'rgba(0,255,0,1.0)';
+const WallColor    = 'rgba(0,255,0,1.0)';
+const RLidarColor  = 'rgba(0,0,255,0.5)';
+const MySlopeColor = 'rgba(255,0,255,1.0)'; 
+const CarBodyColor = 'rgba(255,0,0,1.0)'; 
+const SLidarColor  = 'rgba(0,255,0,1.0)'; 
+const PathColor    = 'rgba(128,0,128,1.0)'; 
+const CurPathColor = 'rgba(255,0,128,1.0)';  
+const SelectColor  = 'rgba(255,0,0,1.0)'; 
+const CornerColor  = 'rgba(0,0,0,1.0)'; 
+const MeasColor    =  'rgba(0,0,128,1.0)';                                                                                                                                                                                         
+const EdgeColor    = 'rgba(255,0,255,1.0)'; 
+const CornerPropColor = 'rgba(255,0,255,1.0)';                                                                                                                                                                          
+const PathLoopColor = 'rgba(255,0,0,1.0)'; 
+
+
+
 
 const car_corner = [ [8,-6],[8,6],[-19,6],[-19,-6],[8,-6]];
 
@@ -319,7 +397,7 @@ drawBase(ctx,xo,yo)
 	{
 	
      ctx.beginPath();
-     ctx.strokeStyle= 'rgba(0,255,0,1.0)';
+     ctx.strokeStyle=TrackColor;
      ctx.arc((s*yy)+x,(c*yy)+y,2,0,2*Math.PI);
      ctx.stroke();
      ctx.restore();
@@ -331,13 +409,12 @@ drawBase(ctx,xo,yo)
 
 
 
-
 drawLidar(ctx,x,y,h,rl,nl)
 {
 if(rl==undefined) return;
 ctx.save();
 ctx.beginPath();
-ctx.strokeStyle= 'rgba(0,0,255,0.5)';
+ctx.strokeStyle=RLidarColor;
 
 for(let j=0; j<360; j++)
 {
@@ -396,7 +473,7 @@ b/=2;
 
 ctx.save();
 ctx.beginPath();
-ctx.strokeStyle= 'rgba(255,0,255,1.0)';
+ctx.strokeStyle= MySlopeColor;
 
 var yy=(p.m*-100)+b;
 var xx=-100;
@@ -455,7 +532,7 @@ let c=Math.cos(-h*Math.PI/180.0);
 
 ctx.save();
 ctx.beginPath();
-ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+ctx.strokeStyle= CarBodyColor;
 let xx=car_corner[0][0];
 let yy=car_corner[0][1];
 ctx.moveTo((c*xx)+(-s*yy)+x,(-((c*yy)+(s*xx)))+y);
@@ -471,7 +548,7 @@ ctx.stroke();
 let dist=2+l/(1250*2.54);//    1250=1cm
 
 ctx.beginPath();
-ctx.strokeStyle= 'rgba(0,255,0,1.0)';
+ctx.strokeStyle= SLidarColor;
 ctx.moveTo(x,+y);
 yy=-dist;
 ctx.lineTo((-s*yy)+x,(-c*yy)+y);
@@ -491,9 +568,10 @@ drawState(ctx,pos,xo,yo)
 {
 this.drawLidar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].rlidar,this.car_States[pos].slidar);
 this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].slidar);
+
 if(this.car_States[pos].cix!=null)
 {
- 	ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+ 	ctx.strokeStyle=CarBodyColor; 
     ctx.beginPath();
 	ctx.arc(this.car_States[pos].cix+xo,-this.car_States[pos].ciy+yo,2,0,2*Math.PI);
 	ctx.stroke();
@@ -511,16 +589,10 @@ if(this.car_States[pos].cix!=null)
 		ctx.lineTo((c*x1)+(-s*y1)+xc,(-((c*y1)+(s*x1)))+yc);
 		ctx.stroke();
 	}
- 	ctx.strokeStyle= 'rgba(0,0,0,1.0)';
 
 }
 
 
-
-if(this.car_States[pos].cpn!=null)
-{	if(this.Paths.length>this.car_States[pos].cpn)
-	this.HighLightPathEl=this.Paths[this.car_States[pos].cpn];
-}
 
 if((this.car_States[pos].sl!=null) && (this.car_States[pos].sl!=undefined))
 {//We hav a slope!
@@ -557,11 +629,11 @@ if(this.corners.length>0)
 	{
 		if(this.HighLightCornerPt==i)
 		{
-		ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+		ctx.strokeStyle= SelectColor;
         ctx.beginPath();
 		ctx.arc(this.corners[i].x,this.corners[i].y,10,0,2*Math.PI);
 		ctx.stroke();
-		ctx.strokeStyle= 'rgba(0,0,0,1.0)';
+		ctx.strokeStyle= CornerColor;
 		}
 		else
 		{
@@ -597,18 +669,31 @@ if(this.corners.length>0)
   if(this.Measurements.length)
   {
 	ctx.save();
-	ctx.strokeStyle= 'rgba(0,0,128,1.0)';
-	ctx.font = '14px Palatino';
+	ctx.strokeStyle=MeasColor;
+    ctx.font = '14px Palatino';
 	ctx.textAlign = 'center';
 	ctx.textBaseline = 'middle';
 
 	for(let i=0; i<this.Measurements.length; i++)
 	{  let m=this.Measurements[i];
-		 ctx.beginPath();
+	  if(m.dist<4)
+	  {
+	      ctx.beginPath();
+		  ctx.moveTo(m.start.x-2,m.start.y-2);
+		  ctx.lineTo(m.start.x+2,m.start.y+2);
+		  ctx.moveTo(m.start.x+2,m.start.y-2);
+		  ctx.lineTo(m.start.x-2,m.start.y+2);
+		  ctx.stroke();
+		  ctx.strokeText(m.value,(m.start.x+m.end.x)/2,(m.start.y+m.end.y)/2-10);
+
+	  }
+	  else
+     {   ctx.beginPath();
 		 ctx.moveTo(m.start.x,m.start.y);
 		 ctx.lineTo(m.end.x,m.end.y);
 		 ctx.stroke();
 		 ctx.strokeText(m.value,(m.start.x+m.end.x)/2,(m.start.y+m.end.y)/2);
+	  }
 	}
 	ctx.restore();
 
@@ -617,20 +702,20 @@ if(this.corners.length>0)
   if(this.Walls.length)
 {
   ctx.save();
-  ctx.strokeStyle= 'rgba(0,0,0,1.0)';
+  ctx.strokeStyle= WallColor;
   ctx.lineWidth=5;
 
   for(let i=0; i<this.Walls.length; i++)
   {  let m=this.Walls[i];
        if(this.HighLightWallPt==i)
 	   {
-	    ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+	    ctx.strokeStyle=SelectColor;
 	   ctx.beginPath();
 	   ctx.arc(m.start.x,m.start.y,3,0,2*Math.PI);
 	   ctx.lineTo(m.end.x,m.end.y);
 	   ctx.arc(m.end.x,m.end.y,3,0,2*Math.PI);
 	   ctx.stroke();
-	   ctx.strokeStyle= 'rgba(0,0,0,1.0)';
+	   ctx.strokeStyle=WallColor;
 
 	   }
 	   else
@@ -651,8 +736,10 @@ if(this.corners.length>0)
 
   if(this.Paths.length>0)
   {
+
+
 	  ctx.save();
-	  ctx.strokeStyle= 'rgba(0,128,0,1.0)';
+	  ctx.strokeStyle=PathColor; 
 	  ctx.font = '14px Palatino';
 	  ctx.textAlign = 'center';
 	  ctx.textBaseline = 'middle';
@@ -663,18 +750,34 @@ if(this.corners.length>0)
 	
 	  for(let i=1; i<this.Paths.length; i++)
 	  {    let m=this.Paths[i];
+
+
 		
 	   if(this.HighLightPathEl===m)
 	   {
 		   ctx.stroke();
 		   ctx.beginPath();
-		   ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+		   ctx.strokeStyle=SelectColor;
 		   ctx.moveTo(this.Paths[i-1].pt.x,this.Paths[i-1].pt.y);
 		   ctx.lineTo(m.pt.x,m.pt.y);
 		   ctx.stroke();
-           ctx.strokeStyle= 'rgba(0,128,0,1.0)';
+           ctx.strokeStyle=PathColor;
 		   ctx.beginPath();
 		   ctx.moveTo(m.pt.x,m.pt.y);
+
+	   }
+	   else
+		if(this.car_States[pos].cpn==i)
+	   {
+			ctx.stroke();
+			ctx.beginPath();
+			ctx.strokeStyle= CurPathColor;
+			ctx.moveTo(this.Paths[i-1].pt.x,this.Paths[i-1].pt.y);
+			ctx.lineTo(m.pt.x,m.pt.y);
+			ctx.stroke();
+			ctx.strokeStyle=PathColor;
+			ctx.beginPath();
+			ctx.moveTo(m.pt.x,m.pt.y);
 
 	   }
 	   else
@@ -683,7 +786,7 @@ if(this.corners.length>0)
 	   }
 		   ctx.stroke();
 	  }
-
+	
 
 	  for(let i=0; i<this.Paths.length; i++)
 	  {    let m=this.Paths[i];
@@ -707,7 +810,7 @@ if(this.corners.length>0)
 
 	   if(m.Edgev!=null)
 	   {
-		   ctx.strokeStyle= 'rgba(255,0,255,1.0)';
+		   ctx.strokeStyle= EdgeColo;
 		   ctx.beginPath();
 		   let p1=m.pt;
 
@@ -739,14 +842,13 @@ if(this.corners.length>0)
 			 ctx.strokeText(lab,(m.Edgev.pt.x+p1.x)/2 ,(m.Edgev.pt.y+p1.y)/2 );
 		   }
 
-           ctx.strokeStyle= 'rgba(0,128,0,1.0)';
 	   }
 
 
 	   if(m.corner_d!=null)
 	   {
 		   let c=m.corner_d;
-		   ctx.strokeStyle= 'rgba(255,0,255,1.0)';
+		   ctx.strokeStyle=CornerPropColor;
 		   ctx.beginPath();
 		   ctx.moveTo(c.path_pt.x,c.path_pt.y);
 		   ctx.lineTo(c.corner_pt.x,c.corner_pt.y);
@@ -754,7 +856,6 @@ if(this.corners.length>0)
 		   ctx.beginPath();
 		   ctx.arc(c.path_pt.x,c.path_pt.y,2,0,2*Math.PI);
 		   ctx.stroke();
-           ctx.strokeStyle= 'rgba(0,128,0,1.0)';
 
 
 		   if((m.corner_d.adj_lr) ||(m.corner_d.adj_dist))
@@ -779,7 +880,7 @@ if(this.corners.length>0)
 
 	   if(m.next_seq)
 	   {
-		   ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+		   ctx.strokeStyle= PathLoopColor;
 		   ctx.beginPath();
 		   ctx.moveTo(m.pt.x,m.pt.y);
 		   ctx.lineTo(this.Paths[m.next_seq].pt.x,this.Paths[m.next_seq].pt.y);
@@ -788,9 +889,42 @@ if(this.corners.length>0)
 	   }
 
 	  }
+	  ctx.font = '14px Palatino';
+		  ctx.textAlign = 'center';
+		  ctx.textBaseline = 'middle';
+
+	  for(let i=1; i<this.Paths.length; i++)
+	  {    let m=this.Paths[i];
+	  if((m.head!=null) && (m.head!=undefined))
+	  {
+	   let  px=(this.Paths[i].pt.x+this.Paths[i-1].pt.x)/2; 
+	   let  py=(this.Paths[i].pt.y+this.Paths[i-1].pt.y)/2;
+	   ctx.beginPath();
+	   ctx.strokeText(m.head.toFixed(0),px,py);
+	   if(m.arc_r>0)
+	   {
+		  let n=this.Paths[i-1];
+		  ctx.beginPath();
+		  ctx.moveTo(n.pt.x,n.pt.y);
+		  let sa=(n.head)*Math.PI/180;
+		  let ea=sa+(m.ChordAngle*Math.PI/180);
+		  if(m.ChordAnlgle>0) 
+			  ctx.arc(m.center_arc.x,m.center_arc.y,m.arc_r,sa,ea,false);
+		  else
+			  ctx.arc(m.center_arc.x,m.center_arc.y,m.arc_r,sa,ea,true);
+		  
+		  ctx.arc(m.center_arc.x,m.center_arc.y,m.arc_r,0,Math.PI*2);
+
+		  ctx.stroke();
+
+	   }
+	  }
+	  }
+
+
 	  if(this.Waiting_ForContinueClick)
 	  {
-		  ctx.strokeStyle= 'rgba(255,0,0,1.0)';
+		  ctx.strokeStyle= SelectColor;
 		  ctx.font = '34px Palatino';
 		  ctx.textAlign = 'left';
 		  ctx.textBaseline = 'top';
@@ -804,45 +938,6 @@ if(this.corners.length>0)
 	  ctx.restore();
   }
 
-/*   if(this.Edges.length>0)
-  {
-	  for(let i=0; i<this.Edges.length; i++)
-	  {
-		  let e=this.Edges[i];
-		  let p1=e.prevpath;
-		  let p2=e.pathpt;
-		  let wa=e.wallpt;
-		  let p={'x':(p1.pt.x+p2.pt.x)/2,'y':(p1.pt.y+p2.pt.y)/2};
-		  let r=this.getClosestPointOnLineSeg(p,wa.start,wa.end);
-
-		  ctx.strokeStyle= 'rgba(255,0,255,1.0)';
-		  ctx.beginPath();
-		  ctx.moveTo(p.x,p.y);
-		  ctx.lineTo(r.pt.x,r.pt.y);
-		  ctx.stroke();
-
-	  }
-
-
-  }
-
-*/
-
-/*  if(this.last_m_x!=null)
-  {
-      ctx.strokeStyle= 'rgba(255,0,0,1.0)';
-	  ctx.beginPath();
-	  ctx.moveTo(this.last_m_x-5,this.last_m_y-5);
-	  ctx.lineTo(this.last_m_x+5,this.last_m_y+5);
-	  ctx.stroke();
-	  ctx.beginPath();
-	  ctx.moveTo(this.last_m_x-5,this.last_m_y+5);
-	  ctx.lineTo(this.last_m_x+5,this.last_m_y-5);
-	  ctx.stroke();
-
-  }
-
-*/
 }
 
 mousedown(e,adjusted_loc,t)
@@ -915,6 +1010,8 @@ mouseup(e,adjusted_loc,t)
 	break;
 	case 'P':
 		this.Paths.push(new Path(adjusted_loc));
+		this.Paths[this.Paths.length-1].recalculate();
+
 	break;
 	case 'W': //measure
 	  this.Walls.push(new Wall(this.down_p,adjusted_loc));
@@ -1179,6 +1276,16 @@ mind.a.splice(mind.i,1);
 
 }
 
+RecalculateAllPaths()
+{	  this.Paths.forEach(function (item,index)
+	  {
+		item.recalculate();
+});
+};
+
+
+
+
 
 DoSplitObject(loc)
 {
@@ -1190,6 +1297,7 @@ if(mind.a===this.Paths)
 if(mind.fTo<0.5)  mind.i++;
 //X.Y is between i -1 and i
 this.Paths.splice(mind.i,0,new Path(loc));
+RecalculateAllPaths();
 }
 else
 if(mind.a===this.Walls)
@@ -1226,7 +1334,7 @@ this.drag_point=null;
 		 let dm=distance_pt(this.Paths[i].pt,loc);
 		 if((this.drag_point==null) ||(this.drag_point.d>dm))
 		 {
-			 this.drag_point={'d':dm, 'pt':this.Paths[i].pt};
+			 this.drag_point={'d':dm, 'pt':this.Paths[i].pt,'rc':this.Paths[i]};
 		 }
 		}
 
@@ -1257,12 +1365,12 @@ this.drag_point=null;
 	 let dm=distance_pt(this.Measurements[i].start,loc);
 	 if((this.drag_point==null) ||(this.drag_point.d>dm))
 	 {
-		 this.drag_point={'d':dm, 'pt':this.Measurements[i].start,'m':this.Measurements[i] };
+		 this.drag_point={'d':dm, 'pt':this.Measurements[i].start,'rc':this.Measurements[i] };
 	 }
 	 dm=distance_pt(this.Measurements[i].end,loc);
 	 if((this.drag_point==null) ||(this.drag_point.d>dm))
 	 {
-		 this.drag_point={'d':dm, 'pt':this.Measurements[i].end,'m':this.Measurements[i] };
+		 this.drag_point={'d':dm, 'pt':this.Measurements[i].end,'rc':this.Measurements[i] };
 	 }
 
 	}
@@ -1276,8 +1384,9 @@ EndPointDrag(loc)
 		{
 		this.drag_point.pt.x=loc.x;
 		this.drag_point.pt.y=loc.y;
-		if (typeof this.drag_point.m === "undefined") return;
-		 this.drag_point.m.recalculate()
+		if (typeof this.drag_point.rc === "undefined") return;
+		 this.drag_point.rc.recalculate()
+		 TheOneCar.RecalculateAllPaths();      
        }
 
 }
@@ -1288,8 +1397,10 @@ EndPointMove(loc)
 		{
 		this.drag_point.pt.x=loc.x;
 		this.drag_point.pt.y=loc.y;
-		if (typeof this.drag_point.m === "undefined") return;
-	    this.drag_point.m.recalculate();
+		if (typeof this.drag_point.rc === "undefined") return;
+	    this.drag_point.rc.recalculate();
+		TheOneCar.RecalculateAllPaths();      
+
        }
 
 }
@@ -1365,8 +1476,9 @@ if(!this.HighLightPathEl)
 
 let bContinue= this.GetCheckedById('FeatureContinue');
 let bStop= this.GetCheckedById('FeatureStop');
+let bArc= this.GetCheckedById('ArcConvert');
 let fOptions=this.GetTextContentById('FeatureOptions');
-let fSpeed=Number(this.GetTextContentById('FeatueSpeed'));
+let fSpeed=Number(this.GetTextContentById('FeatureSpeed'));
 
 let pe=this.HighLightPathEl;
 
@@ -1397,14 +1509,27 @@ else
 pe.next_seq=null;
 }
 pe.next_seq
+
+
 pe.bStop=bStop;
+if(bArc ) pe.Arc=true;
+else
+{
+		pe.ChordAngle=null;
+		pe.arc_r=null;
+		pe.center_arc=null;
+pe.Arc=false; 
+}
 
 if(fOptions=='none') pe.Options=null;
 else
 pe.options=fOptions;
 
-pe.Speed=fSpeed;
+if(fSpeed.length) pe.Speed=fSpeed;
+else
+pe.Speed=null;
 
+pe.recalculate();
 }
 
 FeatureSubmit(ok)
@@ -1659,13 +1784,25 @@ function ReadPathsFile() {
 	      {					 /* now to car coordinates*/
 		   jobj.Path[i].pt.x+= (-fx)+TheOneCar.saved_xo;
 		   jobj.Path[i].pt.y+= (-fy)+TheOneCar.saved_yo;
-	      }
-
+          }
 	  }
 
+	  TheOneCar.Paths=[];
+	  jobj.Path.forEach(function (item,index)
+	  {TheOneCar.Paths.push(new Path(item.pt));
+ 	   TheOneCar.Paths[index].Edgev=item.Edgev;
+ 	   TheOneCar.Paths[index].conrer_d=item.corner_d;
+ 	   TheOneCar.Paths[index].next_seq=item.next_seq;
+ 	   TheOneCar.Paths[index].bStop=item.bStop;
+ 	   TheOneCar.Paths[index].Options=item.Options;
+ 	   TheOneCar.Paths[index].Speed=item.Speed;
+	  });
+
+ TheOneCar.RecalculateAllPaths();      
 
 
-	  TheOneCar.Paths=jobj.Path;
+
+//	  TheOneCar.Paths=jobj.Path;
 
 	  TheOneCar.Measurements=[];
 
@@ -1679,3 +1816,41 @@ function ReadPathsFile() {
 }
 
 
+
+function  Calc_HeadDeg(pfrom,pto)                                                                                                                                                                                     
+{
+if((pto==undefined) ||(pfrom==undefined))
+{
+Console.log("Undefined\n");
+}
+
+let dx=(pto.x-pfrom.x);
+let dy=-(pto.y-pfrom.y);
+
+if(dx==0) //North or South
+{
+  if(dy>0) return 0;
+  else
+	  return 180.0;
+}
+else
+if(dy==0)
+{
+   if(dx>0) return 90.0;
+   else return -90.0;
+}
+
+// So realize that atan 2 works on unit circle where 0 deg is east 
+// and 90 is north
+// and 180 is west
+// and 270/-90 is south
+
+let d=Math.atan2(dx,dy);
+//So we need to reverse direction....
+d*=(180.0/Math.PI);
+//and rotate 90
+//d-=90;
+if(d<-180) d+=360.0;
+if(d> 180) d-=360.0;
+return d;
+}
