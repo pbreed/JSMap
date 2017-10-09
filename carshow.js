@@ -25,6 +25,11 @@ return Math.sqrt((p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y));
 
 }
 
+function mid_point(p1,p2)
+{
+return {'x':(p1.x+p2.x)/2,'y':(p1.y+p2.y)/2};
+}
+
 class Measurement
 {
  constructor(sp,ep)
@@ -92,16 +97,19 @@ class Path
 		 
 		 if(d_p_t>d_t_n) 
 		 {
-		  p2=next_pt;
+
+		  p2=mid_point(pt,next_pt);
 		  //On segment from prev to pt, just not all the way
 		  p1={'x': (pt.x+(prev_pt.x-pt.x)*d_t_n/d_p_t),'y':(pt.y+(prev_pt.y-pt.y)*d_t_n/d_p_t)};
+		  p1=mid_point(pt,p1);
          
 		 }
 		 else
 		 {
-		  p1=prev_pt;
-		  //On segment from pt to next_pt, just not all the way.
+		  p1=mid_point(prev_pt,pt);
+          //On segment from pt to next_pt, just not all the way.
 		  p2={'x': (pt.x+(next_pt.x-pt.x)*d_p_t/d_t_n),'y':(pt.y+(next_pt.y-pt.y)*d_p_t/d_t_n)};
+		  p2=mid_point(pt,p2);
 		 }
 	   
 		 //What is the normal to pt->p1  and pt->p2
