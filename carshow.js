@@ -1,6 +1,5 @@
 
 var TheOneCar;
-
 class carstate
 {
 	constructor(x,y,h,sl,rl,ix,iy,slope,b,cpn,th)
@@ -73,42 +72,115 @@ class Path
 	this.head=head;
 	if(this.Arc)
 	{
+		if((i+1)>=TheOneCar.Paths.length) return;
+		if(i<1) return;
 
-		if((i+1)==TheOneCar.Paths.length) return;
-        let EndHead=Calc_HeadDeg(pt,TheOneCar.Paths[i+1].pt); 
-		if(i < 2 ) return;
-		let pprev_pt=TheOneCar.Paths[i-2].pt;
-		let StartHead=Calc_HeadDeg(pprev_pt,prev_pt);  
-		let ChordAngle=(EndHead-StartHead);
-		if(ChordAngle>=360) ChordAngle-=360;
-		if(ChordAngle<=(-360)) ChordAngle+=360;
+         let next_pt=TheOneCar.Paths[i+1].pt;
+         let d_p_t=distance_pt(prev_pt,pt);
+         let d_t_n=distance_pt(pt,next_pt);
+         let start_head=Calc_HeadDeg(prev_pt,pt);
+         let end_head=Calc_HeadDeg(pt,next_pt);
 
-		if(Math.abs(ChordAngle)<5) return;
-	    //Calc unit chord
-		
-		let x2=Math.cos(ChordAngle*Math.PI/180.0);
-		let y2=Math.sin(ChordAngle*Math.PI/180.0);
-		let unit_c_dist=Math.sqrt((x2-1)*(x2-1)+(y2*y2)); //Y0 =0;
-		let d=distance_pt(prev_pt,pt);
-		let Arc_R=d/unit_c_dist;
-		//Now solve for center...
+		 let head_change=(end_head-start_head);
+
+		while(head_change>180) head_change-=360;
+		while(head_change<(-180)) head_change+=360;
+
+		 let p1;
+		 let p2;
+
+		 
+		 if(d_p_t>d_t_n) 
+		 {
+		  p2=next_pt;
+		  //On segment from prev to pt, just not all the way
+		  p1={'x': (pt.x+(prev_pt.x-pt.x)*d_t_n/d_p_t),'y':(pt.y+(prev_pt.y-pt.y)*d_t_n/d_p_t)};
+         
+		 }
+		 else
+		 {
+		  p1=prev_pt;
+		  //On segment from pt to next_pt, just not all the way.
+		  p2={'x': (pt.x+(next_pt.x-pt.x)*d_p_t/d_t_n),'y':(pt.y+(next_pt.y-pt.y)*d_p_t/d_t_n)};
+		 }
+	   
+		 //What is the normal to pt->p1  and pt->p2
+		 //Where do they intersect?
+
+		 let dy1n=(pt.x-p1.x);
+		 let dx1n=(-(pt.y-p1.y));
+		 
+		 let dy2n=(pt.x-p2.x);
+		 let dx2n=(-(pt.y-p2.y));
+		 
+
+		 let m1=0;
+		 let b1=0;
+		 let m2=0;
+		 let b2=0;
+		 let iy=0;
+		 let ix=0;
+		 
+		 //y=mx+b
+		 if(dx1n!=0)
+		 {
+			m1=dy1n/dx1n;
+			//y=mx+b
+			//b=y-mx
+			b1=p1.y-m1*p1.x;
+		 }
+		 
+
+		 if(dx2n!=0)
+		 {
+			 m2=dy2n/dx2n;
+			 b2=p2.y-m2*p2.x;
+
+		  if(dx1n==0)
+		   {
+			   ix=p1.x;
+			   iy=ix*m2+b2;
+		   }
+		   else
+		   {
+
+			   //ys match for intevept...
+			   // m1x+b1=m2x+b2
+			   // (m1x-m2x)=b2-b1
+			   //x*(m1-m2)=b2-b1
+			   //x=(b2-b1)/(m1-m2)
+
+			 if((m1-m2)==0) return; //Failure 
+			 ix=(b2-b1)/(m1-m2);
+			 iy=ix*m1+b1;
+		   }
 
 
-		let a=(d*d)/(2*d);
+		 }
+		 else
+		 {
+		  //dx2 is 0
+		  //so y=p2.y
+		  //p2.y=m1x+b1
+		  //
 
-		let hsq=(Arc_R*Arc_R)-(a*a);
+		   ix=p2.x;
+		   iy=ix*m1+b1;
+		 }
 
-		let h=Math.sqrt(hsq);
-		x2=(prev_pt.x+pt.x)/2;
-		y2=(prev_pt.y+pt.y)/2;
 
-		let center_x=x2+h*(pt.y-prev_pt.y)/d;
-		let center_y=y2-h*(pt.x-prev_pt.x)/d;
-		
-		
-		this.ChordAngle=ChordAngle;
-		this.arc_r=Arc_R;
-		this.center_arc={'x':center_x, 'y':center_y};
+		 this.iy=iy;
+		 this.ix=ix;
+
+
+
+		 this.center_arc={'x':ix, 'y':iy};
+
+		this.arc_r=distance_pt(p1,this.center_arc);
+		this.ChordAngle=head_change;
+
+		this.p1=p1;
+		this.p2=p2;
 
 	}//We were an arc
 
@@ -901,21 +973,67 @@ if(this.corners.length>0)
 	   let  py=(this.Paths[i].pt.y+this.Paths[i-1].pt.y)/2;
 	   ctx.beginPath();
 	   ctx.strokeText(m.head.toFixed(0),px,py);
+	   ctx.stroke();
+
 	   if(m.arc_r>0)
 	   {
 		  let n=this.Paths[i-1];
-		  ctx.beginPath();
-		  ctx.moveTo(n.pt.x,n.pt.y);
-		  let sa=(n.head)*Math.PI/180;
-		  let ea=sa+(m.ChordAngle*Math.PI/180);
-		  if(m.ChordAnlgle>0) 
-			  ctx.arc(m.center_arc.x,m.center_arc.y,m.arc_r,sa,ea,false);
-		  else
-			  ctx.arc(m.center_arc.x,m.center_arc.y,m.arc_r,sa,ea,true);
-		  
-		  ctx.arc(m.center_arc.x,m.center_arc.y,m.arc_r,0,Math.PI*2);
+	   //   ctx.beginPath();
+		  let sa=m.head;
+		  let ca=m.ChordAngle;
+		  if(ca<0)
+		  {
+			  sa=m.head+90;
 
+		  }
+		  else
+		  { sa=m.head-90;
+		  }
+		  let ea=sa+ca;
+
+//ZOT
+
+		  sa-=90;
+		  ea-=90;
+
+		/*
+		  ctx.beginPath();
+		  ctx.moveTo(m.p1.x,m.p1.y);
+		  ctx.lineTo(m.ix,m.iy);
 		  ctx.stroke();
+
+		  ctx.beginPath();
+		  ctx.moveTo(m.ix,m.iy);
+		  ctx.lineTo(m.p2.x,m.p2.y);
+		  ctx.stroke();
+
+		  */
+
+	      ctx.beginPath();
+		  if(ca>0)
+			  ctx.arc(m.center_arc.x,m.center_arc.y,m.arc_r,sa*Math.PI/180,ea*Math.PI/180,false);
+		  else
+			  ctx.arc(m.center_arc.x,m.center_arc.y,m.arc_r,sa*Math.PI/180,ea*Math.PI/180,true);
+		  ctx.stroke();
+	 
+
+		  ctx.beginPath();
+		  ctx.arc(m.center_arc.x,m.center_arc.y,2,0,Math.PI*2);
+		  ctx.stroke();
+
+
+		  ctx.strokeStyle= SelectColor;
+		  
+		  ctx.beginPath();
+		  ctx.arc(m.p1.x,m.p1.y,2,0,Math.PI*2);
+		  ctx.stroke();
+		  
+		  ctx.strokeStyle=SLidarColor;
+		  ctx.beginPath();
+		  ctx.arc(m.p2.x,m.p2.y,2,0,Math.PI*2);
+		  ctx.stroke();
+		  
+		  ctx.strokeStyle= PathColor;
 
 	   }
 	  }
@@ -1297,7 +1415,7 @@ if(mind.a===this.Paths)
 if(mind.fTo<0.5)  mind.i++;
 //X.Y is between i -1 and i
 this.Paths.splice(mind.i,0,new Path(loc));
-RecalculateAllPaths();
+this.RecalculateAllPaths();
 }
 else
 if(mind.a===this.Walls)
@@ -1659,6 +1777,13 @@ let modal = document.getElementById('CornerDialog');
  modal.style.display = "none";
 this.HighLightPathEl.corner_d=null;
 }
+
+QM()
+{
+//GSATrial=prompt("Start Angle?",GSATrial);
+//GCATrial=prompt("End Angle?",GCATrial);
+}
+
 
 }//end of carshow
 
