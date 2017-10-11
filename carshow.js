@@ -349,8 +349,17 @@ scanone(v){
 		   this.cars_idea_off_x=(this.carx-v.x);
 		   this.cars_idea_off_y=(this.cary-v.y);
 		  }
+
 		  this.cars_idea_of_x=v.x+this.cars_idea_off_x;
 		  this.cars_idea_of_y=v.y+this.cars_idea_off_y;
+		  
+		  if(v.px!=undefined)
+		  {
+		   this.cars_projx=v.px+this.cars_idea_off_x;
+		   this.cars_projy=v.py+this.cars_idea_off_y;
+		  }
+
+
 		  if(v.sn>0)
 		  {
 			this.car_slope=(v.sn-128)/128;
@@ -393,7 +402,13 @@ scanone(v){
 		 {
 		   console.log('NAN??\n');
 		 }
-		 this.car_States.push(new carstate(this.carx,this.cary,use_head,v.lidar,this.LastLidar,this.cars_idea_of_x,this.cars_idea_of_y,this.car_slope,this.car_b,this.cars_current_point_number,this.cars_target_head));
+		 let cs=new carstate(this.carx,this.cary,use_head,v.lidar,this.LastLidar,this.cars_idea_of_x,this.cars_idea_of_y,this.car_slope,this.car_b,this.cars_current_point_number,this.cars_target_head);
+		 if(this.cars_projx!=undefined)
+		 {
+		  cs.projx=this.cars_projx;
+		  cs.projy=this.cars_projy; 
+		 }       
+		 this.car_States.push(cs);
 		 this.car_slope=null;
 		 this.LastLidar=[];
 		 this.expand_extent(this.carx,this.cary);
@@ -649,6 +664,7 @@ this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_S
 
 
 
+
 if(this.car_States[pos].cix!=null)
 {
 ctx.save();
@@ -681,6 +697,23 @@ ctx.save();
 		ctx.lineTo((c*x1)+(-s*y1)+xc,(-((c*y1)+(s*x1)))+yc);
 		ctx.stroke();
 	}
+if(this.car_States[pos].projx!=undefined)
+{
+	let car=this.car_States[pos];
+	let cx=car.projx+xo;
+	let cy=(-car.projy)+yo;
+
+    ctx.beginPath();
+	ctx.moveTo(cx-2,cy-2);
+	ctx.lineTo(cx+2,cy+2);
+	ctx.moveTo(cx-2,cy+2);
+	ctx.lineTo(cx+2,cy-2);
+	ctx.stroke();
+    ctx.beginPath();
+	ctx.arc(cx,cy,2,0,2*Math.PI);
+	ctx.stroke();
+}
+
 ctx.restore();
 
 }
