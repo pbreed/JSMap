@@ -646,11 +646,26 @@ drawState(ctx,pos,xo,yo)
 this.drawLidar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].rlidar,this.car_States[pos].slidar);
 this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].slidar);
 
+
+
+
 if(this.car_States[pos].cix!=null)
 {
+ctx.save();
  	ctx.strokeStyle=CarBodyColor; 
     ctx.beginPath();
 	ctx.arc(this.car_States[pos].cix+xo,-this.car_States[pos].ciy+yo,2,0,2*Math.PI);
+	ctx.stroke();
+
+    ctx.font = '10px Palatino';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.beginPath();
+    let ps='['+this.car_States[pos].cix.toFixed(0)+','+this.car_States[pos].ciy.toFixed(0)+']';
+    ctx.strokeText(ps,this.car_States[pos].cix+xo,-this.car_States[pos].ciy+yo-20);
+    ctx.stroke();
+
+
 	ctx.stroke();
     if(this.car_States[pos].th!=null)
 	{
@@ -666,6 +681,7 @@ if(this.car_States[pos].cix!=null)
 		ctx.lineTo((c*x1)+(-s*y1)+xc,(-((c*y1)+(s*x1)))+yc);
 		ctx.stroke();
 	}
+ctx.restore();
 
 }
 
