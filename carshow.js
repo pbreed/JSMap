@@ -1659,11 +1659,39 @@ console.log('Value =['+t.toString()+'] \n');
 return t;
 }
 
+SetBoolById(id,check)
+{
+let c=document.getElementById(id);
+c.checked=check;
+}
+
+SetTextById(id,txt)
+{
+let c=document.getElementById(id);
+c.value=txt;
+}
+
+
+
+
 
 
 FeatureDialog()
 {
 let modal = document.getElementById('FeatureDialog');
+let pe=this.HighLightPathEl;
+this.SetBoolById('FeatureStop',pe.bStop);
+this.SetBoolById('ArcConvert',pe.Arc);
+if(pe.Speed!=null)
+this.SetTextById('FeatureSpeed',pe.Speed.toFixed(0));
+else
+this.SetTextById('FeatureSpeed','');
+
+if(pe.fOptions!=null)
+	this.SetTextById('FeatureOptions',pe.Options);
+else
+	this.SetTextById('FeatureOptions','none');
+
 
 
  modal.style.display = "block";
@@ -1681,7 +1709,7 @@ let bContinue= this.GetCheckedById('FeatureContinue');
 let bStop= this.GetCheckedById('FeatureStop');
 let bArc= this.GetCheckedById('ArcConvert');
 let fOptions=this.GetTextContentById('FeatureOptions');
-let fSpeed=Number(this.GetTextContentById('FeatureSpeed'));
+let fSpeed=this.GetTextContentById('FeatureSpeed');
 
 let pe=this.HighLightPathEl;
 
@@ -1728,7 +1756,7 @@ if(fOptions=='none') pe.Options=null;
 else
 pe.options=fOptions;
 
-if(fSpeed.length) pe.Speed=fSpeed;
+if(fSpeed.length) pe.Speed=Number(fSpeed);
 else
 pe.Speed=null;
 
