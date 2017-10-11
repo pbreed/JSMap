@@ -177,9 +177,6 @@ class Path
 		 }
 
 
-		 this.iy=iy;
-		 this.ix=ix;
-
 
 
 		 this.center_arc={'x':ix, 'y':iy};
@@ -1956,7 +1953,7 @@ function ReadPathsFile() {
 	  jobj.Path.forEach(function (item,index)
 	  {TheOneCar.Paths.push(new Path(item.pt));
  	   TheOneCar.Paths[index].Edgev=item.Edgev;
- 	   TheOneCar.Paths[index].conrer_d=item.corner_d;
+ 	   TheOneCar.Paths[index].corner_d=item.corner_d;
  	   TheOneCar.Paths[index].next_seq=item.next_seq;
  	   TheOneCar.Paths[index].bStop=item.bStop;
  	   TheOneCar.Paths[index].Options=item.Options;
