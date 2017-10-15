@@ -17,7 +17,7 @@
 
     var TheSelectedAction='?';
 		
-	const MARGIN_FEET=10;
+	const MARGIN_FEET=20;
 	const GRID_HORIZONTAL_SPACING = 10;
 	const GRID_VERTICAL_SPACING = 10;
 	const GRID_LINE_COLOR = 'rgb(0, 0, 200)';

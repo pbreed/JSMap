@@ -407,7 +407,9 @@ scanone(v){
 		 {
 		  cs.projx=this.cars_projx;
 		  cs.projy=this.cars_projy; 
-		 }       
+		  
+		 }
+		 cs.RawOdo=v.Odo;
 		 this.car_States.push(cs);
 		 this.car_slope=null;
 		 this.LastLidar=[];
@@ -677,7 +679,7 @@ ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.beginPath();
-    let ps='['+this.car_States[pos].cix.toFixed(0)+','+this.car_States[pos].ciy.toFixed(0)+']';
+    let ps='['+this.car_States[pos].cix.toFixed(0)+','+this.car_States[pos].ciy.toFixed(0)+']:'+this.car_States[pos].RawOdo.toFixed(0);
     ctx.strokeText(ps,this.car_States[pos].cix+xo,-this.car_States[pos].ciy+yo-20);
     ctx.stroke();
 
@@ -1909,13 +1911,23 @@ var contents="This is a test file";
 
 dobj.onclick= function (e) {
 var obj={'Path':TheOneCar.Paths,'Walls':TheOneCar.Walls,'Measurements':TheOneCar.Measurements};
-dobj.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(obj)));
+var JS=JSON.stringify(obj);
+JS.replace('"corner_d":null,',"");
+JS.replace('"Edgev":null,',"");
+JS.replace('"next_seq":null,',"");
+JS.replace('"Options":null,',"");
+dobj.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JS));
 };
 
 dobj.addEventListener('contextmenu', function(ev)
 {
 var obj={'Path':TheOneCar.Paths,'Walls':TheOneCar.Walls,'Measurements':TheOneCar.Measurements};
-dobj.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(obj)));
+var JS=JSON.stringify(obj);
+JS=JS.replace('"corner_d":null,',"");
+JS=JS.replace('"Edgev":null,',"");
+JS=JS.replace('"next_seq":null,',"");
+JS=JS.replace('"Options":null,',"");
+dobj.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JS));
     return true;
 }, false);
 
