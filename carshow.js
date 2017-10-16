@@ -57,7 +57,7 @@ class Path
  this.corner_d=null;
  this.next_seq=null;
  this.bStop=false;;
- this.Options=null;
+ this.options=null;
  this.Speed=null;
  this.Arc=false;
  this.head=null;
@@ -239,7 +239,7 @@ const ODOSCALE = 4.58;
 const TrackColor   = 'rgba(0,255,0,1.0)';
 const WallColor    = 'rgba(0,0,0,1.0)';
 const RLidarColor  = 'rgba(0,0,255,0.5)';
-const MySlopeColor = 'rgba(255,0,255,1.0)'; 
+const MySlopeColor = 'rgba(0,255,0,1.0)'; 
 const CarBodyColor = 'rgba(255,0,0,1.0)'; 
 const SLidarColor  = 'rgba(0,255,0,1.0)'; 
 const PathColor    = 'rgba(128,0,128,1.0)'; 
@@ -332,6 +332,10 @@ scanone(v){
 	  this.expand_extent(5,5);
 	  break;
 
+  case 'CornerRec':
+	  this.CornerRec=v;
+	  break;
+
   case 'NextPointRec':
 	  {
 
@@ -409,6 +413,12 @@ scanone(v){
 		  cs.projy=this.cars_projy; 
 		  
 		 }
+		 if((this.CornerRec!=undefined) &&(this.CornerRec!=null))
+			 {
+			  cs.CornerRec=this.CornerRec;
+			  this.CornerRec=null;
+		     }
+		     
 		 cs.RawOdo=v.Odo;
 		 this.car_States.push(cs);
 		 this.car_slope=null;
@@ -660,36 +670,54 @@ return loc;
 
 drawState(ctx,pos,xo,yo)
 {
-this.drawLidar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].rlidar,this.car_States[pos].slidar);
-this.drawCar(ctx,this.car_States[pos].x+xo,-this.car_States[pos].y+yo,this.car_States[pos].h,this.car_States[pos].slidar);
+let ccar=this.car_States[pos];
+this.drawLidar(ctx,ccar.x+xo,-ccar.y+yo,ccar.h,ccar.rlidar,ccar.slidar);
+this.drawCar(ctx,ccar.x+xo,-ccar.y+yo,ccar.h,ccar.slidar);
 
 
 
+if(ccar.CornerRec!=undefined)
+{
+ let ccr=ccar.CornerRec;
+let h=ccar.h-90;
+let s=Math.sin(-h*Math.PI/180.0);
+let c=Math.cos(-h*Math.PI/180.0);
+let dist=2+ccr.lc/(1250*2.54);//    1250=1cm
+let yy=-dist;
+let x=ccr.x+xo;
+let y=(-ccr.y)+yo;
+
+ctx.strokeStyle=CarBodyColor; 
+ctx.beginPath();
+ctx.moveTo(x,y);
+ctx.lineTo((-s*yy)+x,(-c*yy)+y);
+ctx.stroke();
+}
 
 
-if(this.car_States[pos].cix!=null)
+if(ccar.cix!=null)
 {
 ctx.save();
  	ctx.strokeStyle=CarBodyColor; 
     ctx.beginPath();
-	ctx.arc(this.car_States[pos].cix+xo,-this.car_States[pos].ciy+yo,2,0,2*Math.PI);
+	ctx.arc(ccar.cix+xo,-ccar.ciy+yo,2,0,2*Math.PI);
 	ctx.stroke();
 
     ctx.font = '10px Palatino';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.beginPath();
-    let ps='['+this.car_States[pos].cix.toFixed(0)+','+this.car_States[pos].ciy.toFixed(0)+']:'+this.car_States[pos].RawOdo.toFixed(0);
-    ctx.strokeText(ps,this.car_States[pos].cix+xo,-this.car_States[pos].ciy+yo-20);
+    let ps='['+ccar.cix.toFixed(0)+','+ccar.ciy.toFixed(0)+']:'+ccar.RawOdo.toFixed(0);
+    ctx.strokeText(ps,ccar.cix+xo,-ccar.ciy+yo-20);
     ctx.stroke();
 
 
 	ctx.stroke();
-    if(this.car_States[pos].th!=null)
+    if(ccar.th!=null)
 	{
-		let h=this.car_States[pos].th;
-		let xc=this.car_States[pos].x+xo;
-		let yc=(-this.car_States[pos].y)+yo;
+		let h=ccar.th;
+		let xc=ccar.x+xo;
+		let yc=(-ccar.y)+yo;
 		let s=Math.sin(-h*Math.PI/180.0);
 		let c=Math.cos(-h*Math.PI/180.0);
 		ctx.beginPath();
@@ -699,11 +727,10 @@ ctx.save();
 		ctx.lineTo((c*x1)+(-s*y1)+xc,(-((c*y1)+(s*x1)))+yc);
 		ctx.stroke();
 	}
-if(this.car_States[pos].projx!=undefined)
+if(ccar.projx!=undefined)
 {
-	let car=this.car_States[pos];
-	let cx=car.projx+xo;
-	let cy=(-car.projy)+yo;
+	let cx=ccar.projx+xo;
+	let cy=(-ccar.projy)+yo;
 
     ctx.beginPath();
 	ctx.moveTo(cx-2,cy-2);
@@ -722,17 +749,17 @@ ctx.restore();
 
 
 
-if((this.car_States[pos].sl!=null) && (this.car_States[pos].sl!=undefined))
+if((ccar.sl!=null) && (ccar.sl!=undefined))
 {//We hav a slope!
 
- let xc=this.car_States[pos].x+xo;
- let yc=(-this.car_States[pos].y)+yo;
- let x1=this.car_States[pos].b;
+ let xc=ccar.x+xo;
+ let yc=(-ccar.y)+yo;
+ let x1=ccar.b;
  let y1=0;
  let y2=300;
- let x2=(this.car_States[pos].sl*300)+x1;
+ let x2=(ccar.sl*300)+x1;
  //Now rotate by heading...
- let h=this.car_States[pos].h;
+ let h=ccar.h;
  //h-=90;
  let s=Math.sin(-h*Math.PI/180.0);
  let c=Math.cos(-h*Math.PI/180.0);
@@ -897,7 +924,7 @@ if(this.corners.length>0)
 
 	   }
 	   else
-		if(this.car_States[pos].cpn==i)
+		if(ccar.cpn==i)
 	   {
 			ctx.stroke();
 			ctx.beginPath();
@@ -1649,7 +1676,7 @@ GetTextContentById(id)
 {
 let c=document.getElementById(id);
 let t=c.value;
-console.log('Value =['+t.toString()+'] \n');
+console.log('Get Txt Value =['+t.toString()+'] \n');
 return t;
 }
 
@@ -1657,7 +1684,7 @@ GetCheckedById(id)
 {
 let c=document.getElementById(id);
 let t=c.checked;
-console.log('Value =['+t.toString()+'] \n');
+console.log('Get Checked Value =['+t.toString()+'] \n');
 return t;
 }
 
@@ -1689,12 +1716,23 @@ this.SetTextById('FeatureSpeed',pe.Speed.toFixed(0));
 else
 this.SetTextById('FeatureSpeed','');
 
-if(pe.fOptions!=null)
-	this.SetTextById('FeatureOptions',pe.Options);
+/*if(pe.foptions!=null)
+	this.SetTextById('FeatureOptions',pe.options);
 else
 	this.SetTextById('FeatureOptions','none');
+*/	
+let sc=document.getElementById('FeatureOptions');
 
+if(pe.options!=null) console.log('In Options = '+pe.options.toString());
+else
+console.log('In Options = null');
 
+if(pe.options!=null)
+{
+	sc.value=pe.options;
+}
+else
+sc.value='none';
 
  modal.style.display = "block";
 }
@@ -1710,7 +1748,7 @@ if(!this.HighLightPathEl)
 let bContinue= this.GetCheckedById('FeatureContinue');
 let bStop= this.GetCheckedById('FeatureStop');
 let bArc= this.GetCheckedById('ArcConvert');
-let fOptions=this.GetTextContentById('FeatureOptions');
+let foptions=this.GetTextContentById('FeatureOptions');
 let fSpeed=this.GetTextContentById('FeatureSpeed');
 
 let pe=this.HighLightPathEl;
@@ -1754,9 +1792,15 @@ else
 pe.Arc=false; 
 }
 
-if(fOptions=='none') pe.Options=null;
+if(foptions=='none') 
+	pe.options=null;
 else
-pe.options=fOptions;
+   pe.options=foptions;
+
+if(pe.options!=null) console.log('out Options = '+pe.options.toString());
+else
+console.log('out Options = null');
+
 
 if(fSpeed.length) pe.Speed=Number(fSpeed);
 else
@@ -1912,10 +1956,10 @@ var contents="This is a test file";
 dobj.onclick= function (e) {
 var obj={'Path':TheOneCar.Paths,'Walls':TheOneCar.Walls,'Measurements':TheOneCar.Measurements};
 var JS=JSON.stringify(obj);
-JS.replace('"corner_d":null,',"");
-JS.replace('"Edgev":null,',"");
-JS.replace('"next_seq":null,',"");
-JS.replace('"Options":null,',"");
+JS=JS.replace('"corner_d":null,',"");
+JS=JS.replace('"Edgev":null,',"");
+JS=JS.replace('"next_seq":null,',"");
+JS=JS.replace('"Options":null,',"");
 dobj.setAttribute('href', 'data:application/json;charset=utf-8,' + encodeURIComponent(JS));
 };
 
@@ -2023,11 +2067,13 @@ function ReadPathsFile() {
   fr.onload = function()
   {
 	  var jobj=JSON.parse(fr.result);
+	  let fx;
+	  let fy;
 
 	  if(TheOneCar.PathOrg_x!=undefined)
 	  {
-		let fx=jobj.Path[0].pt.x
-		let fy=jobj.Path[0].pt.y;
+		fx=jobj.Path[0].pt.x
+		fy=jobj.Path[0].pt.y;
 		//fx==this.PathOrg_x==this.saved_xo;
 		//fy==this.PathOrg_x==this.saved_yo;
 
@@ -2041,11 +2087,23 @@ function ReadPathsFile() {
 	  TheOneCar.Paths=[];
 	  jobj.Path.forEach(function (item,index)
 	  {TheOneCar.Paths.push(new Path(item.pt));
- 	   TheOneCar.Paths[index].Edgev=item.Edgev;
+ 	   if(item.Edgev!=null)
+	   {
+		 item.Edgev.pt.x+= (-fx)+TheOneCar.saved_xo;
+		 item.Edgev.pt.y+= (-fy)+TheOneCar.saved_yo; 
+	   }
+	   TheOneCar.Paths[index].Edgev=item.Edgev;
+	   if(item.curner_d!=null)
+	   {
+		item.corner_pt+= (-fx)+TheOneCar.saved_xo; 
+		item.corner_pt+= (-fy)+TheOneCar.saved_yo; 
+		item.path_pt+= (-fx)+TheOneCar.saved_xo; 
+		item.path_pt+= (-fy)+TheOneCar.saved_yo; 
+	   }
  	   TheOneCar.Paths[index].corner_d=item.corner_d;
  	   TheOneCar.Paths[index].next_seq=item.next_seq;
  	   TheOneCar.Paths[index].bStop=item.bStop;
- 	   TheOneCar.Paths[index].Options=item.Options;
+ 	   TheOneCar.Paths[index].options=item.options;
  	   TheOneCar.Paths[index].Speed=item.Speed;
 	   TheOneCar.Paths[index].Arc=item.Arc;
 
@@ -2059,7 +2117,24 @@ function ReadPathsFile() {
 
 	  TheOneCar.Measurements=[];
 
-	  jobj.Measurements.forEach(function (item,index){TheOneCar.Measurements.push(new Measurement(item.start,item.end));});
+	  jobj.Measurements.forEach(function (item,index)
+								{	item.start.x+= (-fx)+TheOneCar.saved_xo;
+									item.start.y+= (-fy)+TheOneCar.saved_yo;
+									item.end.x+= (-fx)+TheOneCar.saved_xo;
+									item.end.y+= (-fy)+TheOneCar.saved_yo;
+                                    TheOneCar.Measurements.push(new Measurement(item.start,item.end));
+								}
+	  );
+
+	  jobj.Walls.forEach(function (item,index)
+	  {
+		  item.start.x+= (-fx)+TheOneCar.saved_xo;
+		  item.start.y+= (-fy)+TheOneCar.saved_yo;
+		  item.end.x+= (-fx)+TheOneCar.saved_xo;
+		  item.end.y+= (-fy)+TheOneCar.saved_yo;
+
+	  }
+	  );
 
 	  TheOneCar.Walls=jobj.Walls;
   }
